@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import { reviewFlashcard, selectDailyReviewQueue, type Flashcard } from "./domain/flashcards";
 import { calculateDomain, calculateRetention, type Attempt, type Exposure } from "./domain/metrics";
+import { importRecordsAtomically, type DatabaseImportData } from "./storage/database";
 import {
   Activity, ArrowRight, BookOpen, Brain, CalendarDays, Check, Clock3,
   GraduationCap, LayoutDashboard, Library, Moon, Plus, Settings2, Sun,
@@ -270,6 +271,23 @@ function HistoryPage({sessions,disciplines,notebooks}:{sessions:Session[];discip
 function SettingsPage({dark,setDark,reload}:{dark:boolean;setDark:(v:boolean)=>void;reload:()=>void}){
  const [message,setMessage]=useState("");
  async function exportData(){const [disciplines,notebooks,subjects,dependencies,plans,planItems,sessions,sessionSegments,blocks,flashcards,flashcardReviews]=await Promise.all([disciplineRepository.list(),notebookRepository.list(),subjectRepository.list(),subjectDependencyRepository.list(),studyPlanRepository.list(),studyPlanItemRepository.list(),sessionRepository.list(),sessionSegmentRepository.list(),studyBlockRepository.list(),flashcardRepository.list(),flashcardReviewRepository.list()]);const payload={format:"estudosflix-backup",version:3,exportedAt:nowIso(),data:{disciplines,notebooks,subjects,dependencies,plans,planItems,sessions,sessionSegments,blocks,flashcards,flashcardReviews}};const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="backup-estudosflix-"+new Date().toISOString().slice(0,10)+".json";a.click();URL.revokeObjectURL(url);setMessage("Backup exportado.");}
- async function importData(file?:File){if(!file)return;try{const payload=JSON.parse(await file.text());if(payload.format!=="estudosflix-backup"||!payload.data)throw new Error("Arquivo de backup inválido.");for(const [key,repo] of [["disciplines",disciplineRepository],["notebooks",notebookRepository],["subjects",subjectRepository],["dependencies",subjectDependencyRepository],["plans",studyPlanRepository],["planItems",studyPlanItemRepository],["sessions",sessionRepository],["sessionSegments",sessionSegmentRepository],["blocks",studyBlockRepository],["flashcards",flashcardRepository],["flashcardReviews",flashcardReviewRepository]] as const){const rows=payload.data[key];if(Array.isArray(rows))for(const row of rows)await repo.save(row as never);}setMessage("Backup importado. Os dados existentes foram preservados e os registros do arquivo foram adicionados/atualizados.");reload();}catch(e){setMessage(e instanceof Error?e.message:"Falha ao importar backup.");}}
+ async function importData(file?:File){
+  if(!file)return;
+  try{
+   const payload=JSON.parse(await file.text()) as {format?:string;version?:number;data?:Record<string,unknown>};
+   if(payload.format!=="estudosflix-backup"||![2,3].includes(payload.version??0)||!payload.data)throw new Error("Arquivo de backup inválido ou versão não compatível.");
+   const keys=["disciplines","notebooks","subjects","dependencies","plans","planItems","sessions","sessionSegments","blocks","flashcards","flashcardReviews"];
+   const storeMap:Record<string,string>={disciplines:"disciplines",notebooks:"notebooks",subjects:"subjects",dependencies:"subjectDependencies",plans:"studyPlans",planItems:"studyPlanItems",sessions:"sessions",sessionSegments:"sessionSegments",blocks:"studyBlocks",flashcards:"flashcards",flashcardReviews:"flashcardReviews"};
+   const normalized:Record<string,unknown[]>={};let count=0;
+   for(const key of keys){const rows=payload.data[key]??[];if(!Array.isArray(rows))throw new Error("O backup contém uma lista inválida: "+key+".");for(const row of rows){if(!row||typeof row!=="object"||typeof (row as {id?:unknown}).id!=="string")throw new Error("Registro inválido no grupo "+key+".");}normalized[storeMap[key]]=rows;count+=rows.length;}
+   if(count===0)throw new Error("O backup não contém registros para importar.");
+   const preview=keys.map(key=>key+": "+(normalized[storeMap[key]]?.length??0)).join("\n");
+   if(!confirm("Prévia do backup ("+count+" registros):\n"+preview+"\n\nA importação mescla os dados por identificador. Antes, será baixada uma cópia preventiva dos dados atuais. Continuar?"))return;
+   await exportData();
+   await importRecordsAtomically(normalized as DatabaseImportData);
+   setMessage("Backup importado com sucesso. Os registros foram mesclados em uma única transação.");
+   reload();
+  }catch(e){setMessage(e instanceof Error?e.message:"Falha ao importar backup.");}
+ }
  return <><Header eyebrow="SISTEMA" title="Configurações" subtitle="Ajuste a aparência e cuide dos seus dados locais."/><div className="content-grid"><div className="panel"><h2>Aparência</h2><p className="muted-copy">Escolha o tema que prefere utilizar.</p><button className="button secondary" onClick={()=>setDark(!dark)}>{dark?<Sun size={16}/>:<Moon size={16}/>} Ativar tema {dark?"claro":"escuro"}</button></div><div className="panel"><h2>Backup e restauração</h2><p className="muted-copy">Seus dados ficam neste navegador. Exporte um arquivo para transferir ou guardar uma cópia.</p><div className="recommend-actions"><button className="button primary" onClick={()=>void exportData()}><Download size={16}/> Baixar backup</button><label className="button secondary file-button"><Upload size={16}/> Importar<input type="file" accept="application/json,.json" onChange={e=>void importData(e.target.files?.[0])}/></label></div>{message&&<p className="muted-copy" role="status">{message}</p>}</div></div><div className="panel"><h2>Privacidade</h2><p className="muted-copy">O EstudosFlix utiliza armazenamento local do navegador. Limpar os dados do site ou trocar de dispositivo pode apagar ou tornar indisponíveis seus registros. Mantenha backups atualizados.</p></div></>;
 }
