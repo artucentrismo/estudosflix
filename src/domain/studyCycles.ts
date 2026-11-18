@@ -4,6 +4,8 @@ export type StudyCycleProgress = {
   currentNotebookIndex: number;
   /** IDs already visited during the current pass; position is never used as identity. */
   visitedNotebookIds: string[];
+  passStartedAt?: string;
+  completedPassHistory?: Array<{ number: number; startedAt: string; completedAt: string; notebookIds: string[] }>;
   completedPasses: number;
   updatedAt: string;
 };
@@ -25,6 +27,8 @@ export function createStudyCycleProgress(
     notebookIds: [...notebookIds],
     currentNotebookIndex: 0,
     visitedNotebookIds: [],
+    passStartedAt: updatedAt,
+    completedPassHistory: [],
     completedPasses: 0,
     updatedAt,
   };
@@ -50,6 +54,8 @@ export function reconcileStudyCycle(
     ...progress,
     notebookIds: ordered,
     visitedNotebookIds,
+    passStartedAt: progress.passStartedAt ?? updatedAt,
+    completedPassHistory: progress.completedPassHistory ?? [],
     currentNotebookIndex: nextIndex >= 0 ? nextIndex : 0,
     updatedAt,
   };
@@ -89,11 +95,15 @@ export function completeCycleNotebook(
       }
     }
   }
+  const nextPassNumber = progress.completedPasses + (completedPass ? 1 : 0);
+  const passHistory = progress.completedPassHistory ?? [];
   const nextProgress: StudyCycleProgress = {
     ...progress,
     visitedNotebookIds: nextVisited,
+    passStartedAt: completedPass ? updatedAt : (progress.passStartedAt ?? updatedAt),
+    completedPassHistory: completedPass ? [...passHistory, { number: nextPassNumber, startedAt: progress.passStartedAt ?? updatedAt, completedAt: updatedAt, notebookIds: [...ids] }] : passHistory,
     currentNotebookIndex: nextIndex,
-    completedPasses: progress.completedPasses + (completedPass ? 1 : 0),
+    completedPasses: nextPassNumber,
     updatedAt,
   };
   return {
