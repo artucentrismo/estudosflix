@@ -131,7 +131,8 @@ function StudyPage({disciplines,notebooks,subjects,blocks,reload}:{disciplines:R
  const paused=blocks.find(b=>b.status==="paused"||b.status==="in_progress");
  const [disciplineId,setDisciplineId]=useState(paused?.disciplineId??disciplines[0]?.id??"");
  const [notebookId,setNotebookId]=useState(paused?.notebookId??"");
- const [elapsed,setElapsed]=useState(paused?.elapsedSeconds??0);\n const [sessionElapsed,setSessionElapsed]=useState(0);
+ const [elapsed,setElapsed]=useState(paused?.elapsedSeconds??0);
+ const [sessionElapsed,setSessionElapsed]=useState(0);
  const [running,setRunning]=useState(paused?.status==="in_progress");
  const [question,setQuestion]=useState(paused?.lastQuestionNumber?String(paused.lastQuestionNumber):"");
  const [questions,setQuestions]=useState("0");const [correct,setCorrect]=useState("0");
