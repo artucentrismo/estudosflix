@@ -92,7 +92,7 @@ export default function App(){
         {!loading&&section==="Assuntos"&&<SubjectPage disciplines={disciplines} subjects={subjects} reload={()=>setRefresh(x=>x+1)}/>}
         {!loading&&section==="Assuntos"&&<SubjectPage disciplines={disciplines} subjects={subjects} reload={()=>setRefresh(x=>x+1)}/>}
         {!loading&&section==="Cadernos"&&<NotebookPage disciplines={disciplines} notebooks={notebooks} reload={()=>setRefresh(x=>x+1)}/>}
-        {!loading&&section==="Flashcards"&&<FlashcardsPage disciplines={disciplines} subjects={subjects} cards={flashcards} limit={reviewLimit} setLimit={setReviewLimit} reload={()=>setRefresh(x=>x+1)}/>}
+        {!loading&&section==="Flashcards"&&<FlashcardsPage disciplines={disciplines} subjects={subjects} cards={flashcards} limit={reviewLimit} reload={()=>setRefresh(x=>x+1)}/>}
         {!loading&&section==="Histórico"&&<HistoryPage sessions={sessions} disciplines={disciplines} notebooks={notebooks}/>}
         {!loading&&section==="Pré-requisitos"&&<DependenciesPage subjects={subjects} dependencies={dependencies} reload={()=>setRefresh(x=>x+1)}/>}
         {!loading&&section==="Diagnóstico"&&<AnalysisPage subjects={subjects} segments={sessionSegments} dependencies={dependencies} mode="diagnosis"/>}
@@ -267,7 +267,7 @@ function AnalysisPage({subjects,segments,dependencies,mode}:{subjects:Row[];segm
  <p className="muted-copy small-copy">Bloqueios usam o índice (100 − domínio do pré-requisito) × intensidade da dependência. A confirmação exige pelo menos 30 questões e duas exposições válidas; ausência de dados nunca é tratada como domínio saudável.</p>
  </>;
 }
-function FlashcardsPage({disciplines,subjects,cards,limit,setLimit,reload}:{disciplines:Row[];subjects:Row[];cards:Flashcard[];limit:number;setLimit:(n:number)=>void;reload:()=>void}){
+function FlashcardsPage({disciplines,subjects,cards,limit,reload}:{disciplines:Row[];subjects:Row[];cards:Flashcard[];limit:number;reload:()=>void}){
  const [subjectId,setSubjectId]=useState(subjects[0]?.id??"");const [front,setFront]=useState("");const [back,setBack]=useState("");
  const [activeId,setActiveId]=useState<string|undefined>();const [revealed,setRevealed]=useState(false);const [startedAt,setStartedAt]=useState(0);const [message,setMessage]=useState("");
  const queue=selectDailyReviewQueue(cards,new Date(),limit);const current=queue.find(c=>c.id===activeId)??queue[0];
