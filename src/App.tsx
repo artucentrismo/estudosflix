@@ -168,7 +168,7 @@ function StudyPage({disciplines,notebooks,subjects,blocks,reload}:{disciplines:R
  async function pause(){setRunning(false);if(!block)return;const next=pauseStudyBlock({...block,elapsedSeconds:elapsed,lastQuestionNumber:question?Number(question):block.lastQuestionNumber});await studyBlockRepository.save(next);setBlock(next);await recordSession(sessionElapsed);setMessage("Bloco pausado. O tempo desta sessão, o total acumulado e sua posição foram salvos.");reload();}
  async function completeBlock(){
   if(!block)return;
-  const completed=addStudyTime({...block,elapsedSeconds:elapsed,status:"in_progress"},Math.max(0,STUDY_BLOCK_SECONDS-elapsed));
+  const completed=addStudyTime({...block,elapsedSeconds:elapsed,status:"in_progress",lastQuestionNumber:question?Number(question):block.lastQuestionNumber,updatedAt:nowIso()},Math.max(0,STUDY_BLOCK_SECONDS-elapsed));
   await studyBlockRepository.save(completed);
   await recordSession(sessionElapsed);
   const index=available.findIndex(n=>n.id===block.notebookId);
