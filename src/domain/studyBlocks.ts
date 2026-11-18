@@ -44,7 +44,7 @@ export function getStudyBlockProgress(block: Pick<StudyBlock, "elapsedSeconds">,
 
 /** Adiciona tempo líquido ao bloco ativo. Nunca ultrapassa os 15 minutos. */
 export function addStudyTime(block: StudyBlock, seconds: number, now = new Date().toISOString()): StudyBlock {
-  if (block.status === "completed") return block;
+  if (block.status === "completed" || block.status === "completed_early") return block;
   if (!Number.isFinite(seconds) || seconds <= 0) return block;
 
   const elapsedSeconds = Math.min(STUDY_BLOCK_SECONDS, block.elapsedSeconds + Math.floor(seconds));
