@@ -8,7 +8,7 @@ import {
   Target, TrendingUp, Upload, Download, Play, Pause, RotateCcw, Trash2, TriangleAlert
 } from "lucide-react";
 import {
-  disciplineRepository, notebookRepository, sessionRepository, sessionSegmentRepository, studyBlockRepository,
+  disciplineRepository, notebookRepository, studyPlanRepository, studyPlanItemRepository, sessionRepository, sessionSegmentRepository, studyBlockRepository,
   subjectRepository, subjectDependencyRepository, settingsRepository, flashcardRepository, flashcardReviewRepository
 } from "./storage/repositories";
 import {
@@ -16,16 +16,18 @@ import {
   getStudyBlockProgress, pauseStudyBlock, resumeStudyBlock, type StudyBlock
 } from "./domain/studyBlocks";
 
-type Section = "Painel" | "Estudar" | "Disciplinas" | "Assuntos" | "Cadernos" | "Flashcards" | "Histórico" | "Pré-requisitos" | "Diagnóstico" | "Relatórios" | "Configurações";
+type Section = "Painel" | "Estudar" | "Plano de Estudos" | "Disciplinas" | "Assuntos" | "Cadernos" | "Flashcards" | "Histórico" | "Pré-requisitos" | "Diagnóstico" | "Relatórios" | "Configurações";
 type Row = { id:string; name:string; createdAt:string; updatedAt:string; disciplineId?:string; description?:string; parentId?:string };
 type Session = { id:string; createdAt:string; updatedAt:string; disciplineId:string; notebookId:string; durationSeconds:number; questions:number; correct:number; date:string };
 type SegmentDraft = { key:string; subjectId:string; questions:string; correct:string; difficulties:string[] };
 type SegmentRecord = { id:string; createdAt:string; updatedAt:string; sessionId:string; subjectId:string; questions:number; correct:number; difficulties:string[]; date:string };
 type DependencyRecord = { id:string; createdAt:string; updatedAt:string; prerequisiteSubjectId:string; dependentSubjectId:string; strength:"critical"|"strong"|"moderate"|"weak" };
+type PlanRecord = { id:string; createdAt:string; updatedAt:string; name:string };
+type PlanItemRecord = { id:string; createdAt:string; updatedAt:string; planId:string; disciplineId:string; minutes:number; blockCount:number };
 
 const sections: {name:Section; icon:typeof LayoutDashboard}[] = [
   {name:"Painel",icon:LayoutDashboard},{name:"Estudar",icon:BookOpen},
-  {name:"Disciplinas",icon:GraduationCap},{name:"Assuntos",icon:Target},{name:"Cadernos",icon:Library},{name:"Flashcards",icon:Brain},
+  {name:"Plano de Estudos",icon:CalendarDays},{name:"Disciplinas",icon:GraduationCap},{name:"Assuntos",icon:Target},{name:"Cadernos",icon:Library},{name:"Flashcards",icon:Brain},
   {name:"Histórico",icon:TrendingUp},{name:"Pré-requisitos",icon:Target},{name:"Diagnóstico",icon:Activity},{name:"Relatórios",icon:TrendingUp},{name:"Configurações",icon:Settings2}
 ];
 
@@ -44,6 +46,8 @@ export default function App(){
   const [flashcards,setFlashcards]=useState<Flashcard[]>([]);
   const [sessionSegments,setSessionSegments]=useState<SegmentRecord[]>([]);
   const [dependencies,setDependencies]=useState<DependencyRecord[]>([]);
+  const [plans,setPlans]=useState<PlanRecord[]>([]);
+  const [planItems,setPlanItems]=useState<PlanItemRecord[]>([]);
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState("");
   const [refresh,setRefresh]=useState(0);
@@ -52,12 +56,12 @@ export default function App(){
   const reload=useCallback(async()=>{
     if(!loadedRef.current)setLoading(true); setError("");
     try{
-      const [d,n,s,h,b,fc,sg,dp,theme]=await Promise.all([
+      const [d,n,s,h,b,fc,sg,dp,pl,pi,theme]=await Promise.all([
         disciplineRepository.list(),notebookRepository.list(),subjectRepository.list(),
-        sessionRepository.list(),studyBlockRepository.list(),flashcardRepository.list(),sessionSegmentRepository.list(),subjectDependencyRepository.list(),settingsRepository.get("theme") as Promise<string | undefined>
+        sessionRepository.list(),studyBlockRepository.list(),flashcardRepository.list(),sessionSegmentRepository.list(),subjectDependencyRepository.list(),studyPlanRepository.list(),studyPlanItemRepository.list(),settingsRepository.get("theme") as Promise<string | undefined>
       ]);
       setDisciplines(d as Row[]); setNotebooks(n as Row[]); setSubjects(s as Row[]);
-      setSessions(h as Session[]); setBlocks(b); setFlashcards(fc as Flashcard[]); setSessionSegments(sg as SegmentRecord[]); setDependencies(dp as DependencyRecord[]); setDark(theme==="dark");
+      setSessions(h as Session[]); setBlocks(b); setFlashcards(fc as Flashcard[]); setSessionSegments(sg as SegmentRecord[]); setDependencies(dp as DependencyRecord[]); setPlans(pl as PlanRecord[]); setPlanItems(pi as PlanItemRecord[]); setDark(theme==="dark");
     }catch(e){setError(e instanceof Error?e.message:"Não foi possível carregar os dados locais.");}
     finally{loadedRef.current=true;setLoading(false);}
   },[]);
@@ -80,6 +84,7 @@ export default function App(){
         {loading?<div className="panel"><p>Carregando seus dados locais…</p></div>:null}
         {!loading&&section==="Painel"&&<Dashboard disciplines={disciplines} notebooks={notebooks} sessions={sessions} onGo={setSection}/>}
         {!loading&&section==="Estudar"&&<StudyPage disciplines={disciplines} notebooks={notebooks} subjects={subjects} blocks={blocks} reload={()=>setRefresh(x=>x+1)}/>}
+        {!loading&&section==="Plano de Estudos"&&<PlanPage disciplines={disciplines} plans={plans} items={planItems} reload={()=>setRefresh(x=>x+1)}/>}
         {!loading&&section==="Disciplinas"&&<DisciplinePage disciplines={disciplines} reload={()=>setRefresh(x=>x+1)}/>}
         {!loading&&section==="Assuntos"&&<SubjectPage disciplines={disciplines} subjects={subjects} reload={()=>setRefresh(x=>x+1)}/>}
         {!loading&&section==="Assuntos"&&<SubjectPage disciplines={disciplines} subjects={subjects} reload={()=>setRefresh(x=>x+1)}/>}
@@ -118,6 +123,15 @@ function Dashboard({disciplines,notebooks,sessions,onGo}:{disciplines:Row[];note
 }
 function Metric({icon,label,value,detail}:{icon:ReactNode;label:string;value:string;detail:string}){
  return <div className="metric-card"><div className="metric-top"><span className="metric-icon blue">{icon}</span><span>{label}</span></div><div className="metric-value">{value}</div><div className="metric-detail">{detail}</div></div>;
+}
+function PlanPage({disciplines,plans,items,reload}:{disciplines:Row[];plans:PlanRecord[];items:PlanItemRecord[];reload:()=>void}){
+ const [name,setName]=useState("");const [planId,setPlanId]=useState(plans[0]?.id??"");const [disciplineId,setDisciplineId]=useState(disciplines[0]?.id??"");const [minutes,setMinutes]=useState("60");const [message,setMessage]=useState("");
+ useEffect(()=>{if(!planId&&plans[0])setPlanId(plans[0].id);},[plans,planId]);useEffect(()=>{if(!disciplineId&&disciplines[0])setDisciplineId(disciplines[0].id);},[disciplines,disciplineId]);
+ const selected=items.filter(i=>i.planId===planId);const total=selected.reduce((sum,i)=>sum+i.minutes,0);const blocks=selected.reduce((sum,i)=>sum+i.blockCount,0);
+ async function createPlan(e:FormEvent){e.preventDefault();if(!name.trim())return;const plan=await studyPlanRepository.save({name:name.trim()});setName("");setPlanId(plan.id);setMessage("Plano criado.");reload();}
+ async function addTime(e:FormEvent){e.preventDefault();const amount=Math.max(0,Number(minutes)||0);if(!planId||!disciplineId||amount<15){setMessage("Informe pelo menos 15 minutos.");return;}const existing=selected.find(i=>i.disciplineId===disciplineId);if(existing){await studyPlanItemRepository.save({...existing,minutes:existing.minutes+amount,blockCount:Math.floor((existing.minutes+amount)/15)});}else{await studyPlanItemRepository.save({planId,disciplineId,minutes:amount,blockCount:Math.floor(amount/15)});}setMessage("Tempo adicionado ao plano.");reload();}
+ async function removeItem(id:string){if(!confirm("Remover esta distribuição?"))return;await studyPlanItemRepository.remove(id);reload();}
+ return <><Header eyebrow="PLANEJAMENTO" title="Plano de Estudos" subtitle="Distribua o tempo por disciplina. A cada 15 minutos planejados, o sistema calcula uma passada."/><div className="content-grid"><form className="panel form-panel" onSubmit={createPlan}><h2>Criar plano</h2><label>Nome do plano<input value={name} onChange={e=>setName(e.target.value)} placeholder="Ex.: Ciclo semanal" required/></label><button className="button primary"><Plus size={16}/> Criar plano</button><div className="divider"/><h2>Distribuir tempo</h2><label>Plano<select value={planId} onChange={e=>setPlanId(e.target.value)}><option value="">Selecione</option>{plans.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label><label>Disciplina<select value={disciplineId} onChange={e=>setDisciplineId(e.target.value)}><option value="">Selecione</option>{disciplines.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></label><label>Tempo a adicionar (minutos)<input type="number" min="15" step="15" value={minutes} onChange={e=>setMinutes(e.target.value)}/></label><button className="button secondary" disabled={!planId||!disciplines.length}><Plus size={16}/> Adicionar tempo</button>{message&&<p className="muted-copy" role="status">{message}</p>}</form><div className="panel"><div className="panel-heading"><h2>Distribuição</h2><select className="compact-select" value={planId} onChange={e=>setPlanId(e.target.value)}><option value="">Plano</option>{plans.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></div><div className="metric-grid plan-metrics"><Metric icon={<Clock3/>} label="Tempo planejado" value={String(total)+" min"} detail="Tempo total"/><Metric icon={<Target/>} label="Passadas previstas" value={String(blocks)} detail="Blocos de 15 min"/></div>{selected.length===0?<p className="muted-copy">Adicione tempo às disciplinas para montar seu plano.</p>:selected.map(item=><div className="diagnostic-row" key={item.id}><span className="diagnostic-dot blue-dot"/><div><strong>{disciplines.find(d=>d.id===item.disciplineId)?.name??"Disciplina"}</strong><small>{item.minutes} minutos · {item.blockCount} passadas</small></div><button className="icon-button danger" onClick={()=>void removeItem(item.id)} aria-label="Remover distribuição"><Trash2 size={16}/></button></div>)}</div></div></>;
 }
 function DisciplinePage({disciplines,reload}:{disciplines:Row[];reload:()=>void}){
  const [name,setName]=useState(""); const [description,setDescription]=useState(""); const [busy,setBusy]=useState(false); const [msg,setMsg]=useState("");
