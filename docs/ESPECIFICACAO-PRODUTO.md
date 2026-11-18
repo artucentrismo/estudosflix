@@ -2,7 +2,7 @@
 
 ## 1. Visão do produto
 
-O EstudosFlix é um aplicativo multiplataforma, local e totalmente offline para gerenciamento de estudos por questões, utilizável em computadores e iPads. A experiência principal será uma aplicação web instalável (PWA), com possibilidade de empacotamento desktop. O estudante resolve questões em plataformas externas e registra os resultados no aplicativo. O sistema organiza o conhecimento, acompanha o desempenho, identifica dificuldades e recomenda a próxima ação de estudo.
+O EstudosFlix é um WebApp responsivo, gratuito e multiplataforma para gerenciamento de estudos por questões, acessível pelo navegador em computadores, iPads e celulares. A instalação como PWA é opcional; o usuário pode abrir o link normalmente ou adicionar o sistema à tela inicial. O estudante resolve questões em plataformas externas e registra os resultados no aplicativo. O sistema organiza o conhecimento, acompanha o desempenho, identifica dificuldades e recomenda a próxima ação de estudo.
 
 **Promessa:** responder com clareza “o que devo estudar agora?” sem transformar o gerenciamento do estudo em mais uma tarefa pesada.
 
@@ -17,7 +17,7 @@ GitHub serve apenas para versionamento e distribuição do código. Dados pessoa
 
 ## 2. Princípios inegociáveis
 1. Offline por padrão: todas as funções essenciais operam sem internet.
-2. Privacidade local: dados do aluno ficam no banco SQLite do dispositivo.
+2. Privacidade local: dados do aluno ficam no IndexedDB do navegador/dispositivo.
 3. Sem IA: nenhuma pergunta, resposta ou explicação pode ser inventada pelo sistema.
 4. Evidência antes de conclusão: dados insuficientes nunca viram domínio, retenção ou trava confirmados.
 5. Recomendação explicável: toda recomendação apresenta um motivo em linguagem simples.
@@ -268,19 +268,13 @@ Estados obrigatórios: vazio, carregamento, sucesso, erro, confirmação, baixa 
 
 ## 13. Compatibilidade multiplataforma
 
-A aplicação web será responsiva e instalável como PWA em iPadOS (Safari) e navegadores desktop compatíveis. Deve suportar orientação retrato e paisagem, toque, áreas seguras do iPad, teclado externo e layouts sem hover obrigatório. O service worker disponibiliza os arquivos da aplicação offline após a primeira instalação/carregamento completo.
+A aplicação é um WebApp responsivo, acessível pelo navegador em computadores, iPads e celulares. A instalação como PWA é opcional. Deve suportar orientação retrato e paisagem, toque, áreas seguras do iPad, teclado externo e layouts sem hover obrigatório. O service worker disponibiliza os arquivos da aplicação offline após a primeira carga completa.
 
-O armazenamento será abstraído por uma interface de repositório:
-- Web/PWA: IndexedDB, com migrações e transações locais.
-- Desktop empacotado: SQLite local.
-
-As regras de domínio e cálculos são compartilhados e independentes da plataforma. O modelo lógico dos dados e o formato de backup são comuns aos dois ambientes.
-
-No MVP não há sincronização entre dispositivos. Cada instalação mantém seus próprios dados; a transferência ocorre por exportação e importação de backup.
+Todos os dispositivos usam a mesma aplicação web e IndexedDB como armazenamento local. As regras de domínio e cálculos são independentes do dispositivo. O armazenamento é local à origem e ao perfil do navegador: cada aparelho mantém seus próprios dados, sem conta online e sem sincronização automática. A transferência ocorre manualmente por exportação e importação de backup.
 
 ## 14. Privacidade, backup e dados
 
-- Banco SQLite armazenado localmente.
+- Dados armazenados localmente no IndexedDB do navegador/dispositivo.
 - Backup exportado pelo usuário para arquivo local.
 - Importação com validação de versão e integridade antes de substituir/restaurar dados.
 - Nenhum dado pessoal é enviado ao GitHub.
@@ -300,7 +294,7 @@ No MVP não há sincronização entre dispositivos. Cada instalação mantém se
 10. Gerar recomendação explicável de próximo estudo.
 11. Exibir diagnóstico e relatórios locais.
 12. Exportar/importar backup local.
-13. Funcionar sem conexão com a internet após a instalação/carregamento inicial.
+13. Funcionar sem conexão com a internet após o primeiro carregamento completo.
 14. Ser utilizável em iPad, em retrato e paisagem, com interação por toque.
 15. Permitir instalação como PWA e manter os dados locais após fechar/reabrir.
-16. Não incluir IA, APIs externas ou serviços em nuvem.
+16. Não incluir IA, APIs externas, contas online, sincronização ou serviços em nuvem.
