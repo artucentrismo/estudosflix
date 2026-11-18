@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";\nimport type { ReactNode } from "react";
+import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import {
   Activity, ArrowRight, BookOpen, Brain, CalendarDays, Check, ChevronDown,
   ChevronRight, CircleAlert, Clock3, Compass, GraduationCap, LayoutDashboard,
