@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import { calculateDomain, calculateRetention } from "./metrics";
 
 describe("calculateDomain", () => {
-  it("does not declare domain with fewer than 20 questions", () => {
+  it("caps domain at 70% with fewer than 20 questions", () => {
     const result = calculateDomain([{ questions: 1, correct: 1, date: "2026-01-01" }], []);
-    expect(result.value).toBeNull();
+    expect(result.value).toBeLessThanOrEqual(70);
     expect(result.confidence).toBe("insufficient");
   });
 
@@ -13,6 +13,12 @@ describe("calculateDomain", () => {
     expect(result.currentPerformance).toBeCloseTo(83.333, 2);
     expect(result.value).not.toBeNull();
     expect(result.value!).toBeLessThanOrEqual(result.currentPerformance);
+  });
+
+  it("caps domain at 85% while evidence is between 20 and 49 questions", () => {
+    const result = calculateDomain([{ questions: 30, correct: 30, date: "2026-01-01" }], []);
+    expect(result.value).toBeLessThanOrEqual(85);
+    expect(result.confidence).toBe("low");
   });
 
   it("never allows domain to exceed current smoothed performance", () => {

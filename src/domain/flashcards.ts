@@ -7,7 +7,9 @@ export const MAX_CONSECUTIVE_CORRECT = 5;
 export const ARCHIVE_RESPONSE_TIME_MS = 5000;
 
 export type Flashcard = BaseRecord & {
-  subjectId: string;
+  notebookId?: string;
+  /** Legacy origin retained for cards created before notebook ownership. */
+  subjectId?: string;
   front: string;
   back: string;
   level: number;
@@ -18,6 +20,9 @@ export type Flashcard = BaseRecord & {
   lastReviewedAt?: string;
   nextReviewAt: string;
   archived: boolean;
+  everArchived?: boolean;
+  archivedAt?: string;
+  reactivationCount?: number;
   recentResults?: boolean[];
   lastCorrectAt?: string;
 };
@@ -57,6 +62,8 @@ export function reviewFlashcard(
     lastReviewedAt: reviewedAt,
     nextReviewAt: nextReview.toISOString(),
     archived: card.archived || archived,
+    everArchived: card.everArchived || archived,
+    ...(archived && !card.archived ? { archivedAt: reviewedAt } : {}),
     recentResults,
     ...(remembered ? { lastCorrectAt: reviewedAt } : {}),
     updatedAt: reviewedAt,
@@ -71,6 +78,19 @@ export function reviewFlashcard(
     responseTimeMs: safeTime,
   };
   return { card: updatedCard, review };
+}
+
+
+export function reactivateFlashcard(card: Flashcard, updatedAt = new Date().toISOString()): Flashcard {
+  return {
+    ...card,
+    archived: false,
+    consecutiveCorrect: 0,
+    level: 0,
+    reactivationCount: (card.reactivationCount ?? 0) + 1,
+    nextReviewAt: updatedAt,
+    updatedAt,
+  };
 }
 
 export function calculateFlashcardPriority(card: Flashcard, now = new Date()): number {

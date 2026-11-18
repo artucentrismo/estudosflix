@@ -59,7 +59,7 @@ export function calculateDomain(attempts: Attempt[], exposures: Exposure[]): Dom
     totalQuestions < 100 ? "moderate" : "high";
 
   return {
-    value: totalQuestions < 20 ? null : calculatedDomain * 100,
+    value: totalQuestions === 0 ? null : Math.min(totalQuestions < 20 ? 70 : totalQuestions < 50 ? 85 : 100, calculatedDomain * 100),
     currentPerformance: currentPerformance * 100,
     consistency: consistency * 100,
     experience: experience * 100,

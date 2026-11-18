@@ -6,7 +6,7 @@
 
 export const STUDY_BLOCK_SECONDS = 15 * 60;
 
-export type StudyBlockStatus = "in_progress" | "paused" | "completed";
+export type StudyBlockStatus = "in_progress" | "paused" | "completed" | "completed_early";
 
 export type StudyBlock = {
   id: string;
@@ -14,6 +14,8 @@ export type StudyBlock = {
   disciplineId: string;
   notebookId: string;
   elapsedSeconds: number;
+  /** Study time already credited to the general subject allocation. */
+  generalCreditedSeconds?: number;
   lastQuestionId?: string;
   lastQuestionNumber?: number;
   status: StudyBlockStatus;
@@ -29,19 +31,20 @@ export type StudyBlockProgress = {
   isComplete: boolean;
 };
 
-export function getStudyBlockProgress(block: Pick<StudyBlock, "elapsedSeconds">): StudyBlockProgress {
-  const elapsedSeconds = Math.min(STUDY_BLOCK_SECONDS, Math.max(0, Math.floor(block.elapsedSeconds)));
+export function getStudyBlockProgress(block: Pick<StudyBlock, "elapsedSeconds">, durationSeconds = STUDY_BLOCK_SECONDS): StudyBlockProgress {
+  const duration = Math.max(1, Math.floor(durationSeconds));
+  const elapsedSeconds = Math.min(duration, Math.max(0, Math.floor(block.elapsedSeconds)));
   return {
     elapsedSeconds,
-    remainingSeconds: STUDY_BLOCK_SECONDS - elapsedSeconds,
-    completionPercent: (elapsedSeconds / STUDY_BLOCK_SECONDS) * 100,
-    isComplete: elapsedSeconds >= STUDY_BLOCK_SECONDS,
+    remainingSeconds: duration - elapsedSeconds,
+    completionPercent: (elapsedSeconds / duration) * 100,
+    isComplete: elapsedSeconds >= duration,
   };
 }
 
 /** Adiciona tempo líquido ao bloco ativo. Nunca ultrapassa os 15 minutos. */
 export function addStudyTime(block: StudyBlock, seconds: number, now = new Date().toISOString()): StudyBlock {
-  if (block.status === "completed") return block;
+  if (block.status === "completed" || block.status === "completed_early") return block;
   if (!Number.isFinite(seconds) || seconds <= 0) return block;
 
   const elapsedSeconds = Math.min(STUDY_BLOCK_SECONDS, block.elapsedSeconds + Math.floor(seconds));
@@ -68,7 +71,7 @@ export function resumeStudyBlock(block: StudyBlock, now = new Date().toISOString
   return { ...block, status: "in_progress", updatedAt: now };
 }
 
-/** Um bloco concluído libera a rotação para o próximo caderno; a passada depende do ciclo inteiro. */
+/** Um bloco de 15 minutos completo libera avanço automático. O encerramento manual antecipado é tratado pela camada de aplicação. */
 export function canAdvanceToNextNotebook(block: StudyBlock): boolean {
   return block.status === "completed" && block.elapsedSeconds >= STUDY_BLOCK_SECONDS;
 }
