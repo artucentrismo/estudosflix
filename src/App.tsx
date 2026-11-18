@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { FormEvent, ReactNode } from "react";
 import {
   Activity, ArrowRight, BookOpen, Brain, CalendarDays, Check, Clock3,
   GraduationCap, LayoutDashboard, Library, Moon, Plus, Settings2, Sun,
@@ -100,12 +101,12 @@ function Dashboard({disciplines,notebooks,sessions,onGo}:{disciplines:Row[];note
  {sessions.length===0?<p className="muted-copy">Ainda não há sessões registradas. Quando concluir seu primeiro bloco, ele aparecerá aqui.</p>:sessions.slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5).map(s=><div className="diagnostic-row" key={s.id}><span className="diagnostic-dot green-dot"/><div><strong>{notebooks.find(n=>n.id===s.notebookId)?.name??"Caderno"}</strong><small>{new Date(s.date).toLocaleString("pt-BR")} · {fmt(s.durationSeconds)} · {s.questions} questões</small></div><b>{s.questions?Math.round(s.correct/s.questions*100)+"%":"—"}</b></div>)}</div>
  </>;
 }
-function Metric({icon,label,value,detail}:{icon:React.ReactNode;label:string;value:string;detail:string}){
+function Metric({icon,label,value,detail}:{icon:ReactNode;label:string;value:string;detail:string}){
  return <div className="metric-card"><div className="metric-top"><span className="metric-icon blue">{icon}</span><span>{label}</span></div><div className="metric-value">{value}</div><div className="metric-detail">{detail}</div></div>;
 }
 function DisciplinePage({disciplines,reload}:{disciplines:Row[];reload:()=>void}){
  const [name,setName]=useState(""); const [description,setDescription]=useState(""); const [busy,setBusy]=useState(false); const [msg,setMsg]=useState("");
- async function save(e:React.FormEvent){e.preventDefault();if(!name.trim())return;setBusy(true);setMsg("");try{await disciplineRepository.save({name:name.trim(),description:description.trim()});setName("");setDescription("");reload();}catch(err){setMsg(err instanceof Error?err.message:"Erro ao salvar.");}finally{setBusy(false);}}
+ async function save(e:FormEvent){e.preventDefault();if(!name.trim())return;setBusy(true);setMsg("");try{await disciplineRepository.save({name:name.trim(),description:description.trim()});setName("");setDescription("");reload();}catch(err){setMsg(err instanceof Error?err.message:"Erro ao salvar.");}finally{setBusy(false);}}
  async function remove(id:string){if(!confirm("Excluir esta disciplina? Os cadernos vinculados não serão excluídos automaticamente."))return;await disciplineRepository.remove(id);reload();}
  return <><Header eyebrow="PLANEJAMENTO" title="Disciplinas" subtitle="Cadastre as disciplinas que organizam sua jornada de aprendizagem."/><div className="content-grid"><form className="panel form-panel" onSubmit={save}><h2>Nova disciplina</h2><label>Nome da disciplina<input value={name} onChange={e=>setName(e.target.value)} placeholder="Ex.: Direito Constitucional" required/></label><label>Descrição (opcional)<textarea value={description} onChange={e=>setDescription(e.target.value)} placeholder="Objetivo ou observações"/></label>{msg&&<p className="error-text">{msg}</p>}<button className="button primary" disabled={busy}>{busy?"Salvando…":<><Plus size={16}/> Adicionar disciplina</>}</button></form><div className="panel"><div className="panel-heading"><h2>Suas disciplinas</h2><b>{disciplines.length}</b></div>{disciplines.length===0?<p className="muted-copy">Nenhuma disciplina cadastrada.</p>:disciplines.map(d=><div className="diagnostic-row" key={d.id}><span className="diagnostic-dot green-dot"/><div><strong>{d.name}</strong><small>{d.description||"Sem descrição"}</small></div><button className="icon-button danger" onClick={()=>void remove(d.id)} aria-label={"Excluir "+d.name}><Trash2 size={16}/></button></div>)}</div></div></>;
 }
@@ -125,14 +126,14 @@ function StudyPage({disciplines,notebooks,subjects,blocks,reload}:{disciplines:R
  const [question,setQuestion]=useState(paused?.lastQuestionNumber?String(paused.lastQuestionNumber):"");
  const [questions,setQuestions]=useState("0");const [correct,setCorrect]=useState("0");
  const [subjectId,setSubjectId]=useState("");
- const [block,setBlock]=useState<StudyBlock|undefined>(paused);
+ const [block,setBlock]=useState<StudyBlock|undefined>(paused);\n const elapsedRef=useRef(elapsed);\n useEffect(()=>{elapsedRef.current=elapsed;},[elapsed]);
  const [saving,setSaving]=useState(false);const [message,setMessage]=useState("");
  const available=notebooks.filter(n=>n.disciplineId===disciplineId);
  const progress=getStudyBlockProgress({elapsedSeconds:elapsed});
  const linkedSubjects=subjects.filter(s=>s.disciplineId===disciplineId);
  useEffect(()=>{if(!notebookId&&available[0])setNotebookId(available[0].id);},[available,notebookId]);
  useEffect(()=>{if(!running)return;const timer=window.setInterval(()=>setElapsed(v=>Math.min(STUDY_BLOCK_SECONDS,v+1)),1000);return()=>window.clearInterval(timer);},[running]);
- useEffect(()=>{if(block&&running){const timer=window.setInterval(()=>{const next={...block,elapsedSeconds:elapsed,updatedAt:nowIso(),lastQuestionNumber:question?Number(question):block.lastQuestionNumber};void studyBlockRepository.save(next);},5000);return()=>window.clearInterval(timer);}},[block,running,elapsed,question]);
+ useEffect(()=>{if(block&&running){const timer=window.setInterval(()=>{const next={...block,elapsedSeconds:elapsedRef.current,updatedAt:nowIso(),lastQuestionNumber:question?Number(question):block.lastQuestionNumber};void studyBlockRepository.save(next);},5000);return()=>window.clearInterval(timer);}},[block,running,question]);
  useEffect(()=>{if(elapsed>=STUDY_BLOCK_SECONDS&&running){setRunning(false);void completeBlock();}},[elapsed,running]);
  async function begin(){if(!notebookId){setMessage("Cadastre ou selecione um caderno antes de iniciar.");return;}let current=block;if(!current){const now=nowIso();current={id:makeId(),createdAt:now,updatedAt:now,disciplineId,notebookId,elapsedSeconds:0,status:"in_progress",startedAt:now};}else current=resumeStudyBlock({...current,disciplineId,notebookId});await studyBlockRepository.save(current);setBlock(current);setElapsed(current.elapsedSeconds);setRunning(true);setMessage("");}
  async function pause(){setRunning(false);if(!block)return;const next=pauseStudyBlock({...block,elapsedSeconds:elapsed,lastQuestionNumber:question?Number(question):block.lastQuestionNumber});await studyBlockRepository.save(next);setBlock(next);setMessage("Bloco pausado. Seu tempo e sua posição foram salvos.");}
