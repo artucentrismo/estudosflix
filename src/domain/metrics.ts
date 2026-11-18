@@ -39,7 +39,7 @@ export function calculateDomain(attempts: Attempt[], exposures: Exposure[]): Dom
   const currentPerformance = (recent.correct + 5) / (recent.questions + 10);
 
   const validExposures = exposures
-    .filter(e => e.questions > 0 && e.correct >= 0 && e.correct <= e.questions)
+    .filter(e => e.questions >= 10 && e.correct >= 0 && e.correct <= e.questions)
     .sort((a, b) => a.date.localeCompare(b.date));
   const rates = validExposures.map(e => (e.correct / e.questions) * 100);
   const mean = rates.length ? sum(rates) / rates.length : 0;
