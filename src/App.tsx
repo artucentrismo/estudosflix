@@ -176,6 +176,8 @@ function StudyPage({disciplines,notebooks,subjects,blocks,reload}:{disciplines:R
  const available=notebooks.filter(n=>n.disciplineId===disciplineId);
  const progress=getStudyBlockProgress({elapsedSeconds:elapsed});
  const linkedSubjects=subjects.filter(s=>s.disciplineId===disciplineId);
+ const notebookHistory=blocks.filter(b=>b.notebookId===notebookId).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))[0];
+ useEffect(()=>{if(!block){setQuestion(notebookHistory?.lastQuestionNumber!==undefined?String(notebookHistory.lastQuestionNumber+1):"");}},[notebookId,blocks,block?.id]);
  useEffect(()=>{if(!notebookId&&available[0])setNotebookId(available[0].id);},[available,notebookId]);
  useEffect(()=>{if(!running)return;const timer=window.setInterval(()=>{setElapsed(v=>Math.min(STUDY_BLOCK_SECONDS,v+1));setSessionElapsed(v=>v+1);},1000);return()=>window.clearInterval(timer);},[running]);
  useEffect(()=>{if(block&&running){const timer=window.setInterval(()=>{const next={...block,elapsedSeconds:elapsedRef.current,updatedAt:nowIso(),lastQuestionNumber:question?Math.max(0,Number(question)-1):block.lastQuestionNumber};void studyBlockRepository.save(next);},5000);return()=>window.clearInterval(timer);}},[block,running,question]);
