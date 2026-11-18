@@ -262,7 +262,7 @@ function StudyPage({disciplines,notebooks,subjects,notebookSubjects,dependencies
   const step=completeCycleNotebook(currentProgress,now);
   setCycleProgress(step.progress);await settingsRepository.set("studyCycle:"+disciplineId,step.progress);
   const next=eligibleNotebooks.find(n=>n.id===step.nextNotebookId);
-  const generalNext=generalCycle??reconcileGeneralStudyCycle(undefined,disciplines.filter(d=>notebooks.some(n=>n.disciplineId===d.id)).map(d=>d.id),now);
+  const savedGeneral=await settingsRepository.get("generalStudyCycle");const generalNext=savedGeneral&&typeof savedGeneral==="object"?savedGeneral as GeneralStudyCycleProgress:generalCycle??reconcileGeneralStudyCycle(undefined,disciplines.filter(d=>notebooks.some(n=>n.disciplineId===d.id)).map(d=>d.id),now);setGeneralCycle(generalNext);
   setNotebookId(next?.id??block.notebookId);setBlock(undefined);setElapsed(0);setQuestion("");setRunning(false);
   if(generalNext.currentDisciplineId&&generalNext.currentDisciplineId!==disciplineId){setDisciplineId(generalNext.currentDisciplineId);setNotebookId("");setMessage("Tempo planejado desta matéria alcançado. Próxima matéria: "+(disciplines.find(d=>d.id===generalNext.currentDisciplineId)?.name??"próxima disciplina")+". A posição de cada ciclo foi preservada.");reload();return;}
   setMessage(step.completedPass?"Passada "+step.progress.completedPasses+" concluída. Você voltou ao primeiro caderno.":manual?"Caderno encerrado. O tempo parcial foi registrado e a sequência avançou. Próximo: "+(next?.name??"caderno indisponível")+".":"Bloco de 15 minutos concluído. Próximo caderno: "+(next?.name??"nenhum disponível")+".");
