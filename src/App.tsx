@@ -42,9 +42,10 @@ export default function App(){
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState("");
   const [refresh,setRefresh]=useState(0);
+  const loadedRef=useRef(false);
 
   const reload=useCallback(async()=>{
-    setLoading(true); setError("");
+    if(!loadedRef.current)setLoading(true); setError("");
     try{
       const [d,n,s,h,b,fc,theme]=await Promise.all([
         disciplineRepository.list(),notebookRepository.list(),subjectRepository.list(),
@@ -53,7 +54,7 @@ export default function App(){
       setDisciplines(d as Row[]); setNotebooks(n as Row[]); setSubjects(s as Row[]);
       setSessions(h as Session[]); setBlocks(b); setFlashcards(fc as Flashcard[]); setDark(theme==="dark");
     }catch(e){setError(e instanceof Error?e.message:"Não foi possível carregar os dados locais.");}
-    finally{setLoading(false);}
+    finally{loadedRef.current=true;setLoading(false);}
   },[]);
   useEffect(()=>{void reload();},[reload,refresh]);
   useEffect(()=>{document.documentElement.dataset.theme=dark?"dark":"light";void settingsRepository.set("theme",dark?"dark":"light").catch(()=>{});},[dark]);
