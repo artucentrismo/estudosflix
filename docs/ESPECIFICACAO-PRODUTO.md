@@ -296,5 +296,5 @@ Todos os dispositivos usam a mesma aplicação web e IndexedDB como armazenament
 12. Exportar/importar backup local.
 13. Funcionar sem conexão com a internet após o primeiro carregamento completo.
 14. Ser utilizável em iPad, em retrato e paisagem, com interação por toque.
-15. Permitir instalação como PWA e manter os dados locais após fechar/reabrir.
+15. Permitir acesso direto pelo navegador e oferecer instalação opcional como PWA, mantendo os dados locais após fechar/reabrir.
 16. Não incluir IA, APIs externas, contas online, sincronização ou serviços em nuvem.
