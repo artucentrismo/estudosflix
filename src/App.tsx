@@ -165,8 +165,19 @@ function StudyPage({disciplines,notebooks,subjects,blocks,reload}:{disciplines:R
   setSegments([{key:makeId(),subjectId:"",questions:"0",correct:"0",difficulties:[]}]);
   setSessionElapsed(0);
  }
- async function pause(){setRunning(false);if(!block)return;const next=pauseStudyBlock({...block,elapsedSeconds:elapsed,lastQuestionNumber:question?Number(question):block.lastQuestionNumber});await studyBlockRepository.save(next);setBlock(next);await recordSession(sessionElapsed);setMessage("Bloco pausado. O tempo desta sessão, o total acumulado e sua posição foram salvos.");}
- async function completeBlock(){if(!block)return;const next=addStudyTime({...block,status:"in_progress"},Math.max(0,STUDY_BLOCK_SECONDS-block.elapsedSeconds));await studyBlockRepository.save(next);setBlock(next);setElapsed(STUDY_BLOCK_SECONDS);setMessage("Passada concluída! Você completou 15 minutos neste caderno.");reload();}
+ async function pause(){setRunning(false);if(!block)return;const next=pauseStudyBlock({...block,elapsedSeconds:elapsed,lastQuestionNumber:question?Number(question):block.lastQuestionNumber});await studyBlockRepository.save(next);setBlock(next);await recordSession(sessionElapsed);setMessage("Bloco pausado. O tempo desta sessão, o total acumulado e sua posição foram salvos.");reload();}
+ async function completeBlock(){
+  if(!block)return;
+  const completed=addStudyTime({...block,elapsedSeconds:elapsed,status:"in_progress"},Math.max(0,STUDY_BLOCK_SECONDS-elapsed));
+  await studyBlockRepository.save(completed);
+  await recordSession(sessionElapsed);
+  const index=available.findIndex(n=>n.id===block.notebookId);
+  const next=available.length>1?available[(index+1+available.length)%available.length]:undefined;
+  setNotebookId(next?.id??block.notebookId);
+  setBlock(undefined);setElapsed(0);setQuestion("");
+  setMessage("Passada concluída! 15 minutos registrados. Próximo caderno: "+(next?.name??"o caderno atual")+".");
+  reload();
+ }
  async function finishSession(){if(!block||sessionElapsed===0)return;setSaving(true);try{const now=nowIso();const completed=elapsed>=STUDY_BLOCK_SECONDS;const saved={...block,elapsedSeconds:elapsed,lastQuestionNumber:question?Number(question):block.lastQuestionNumber,updatedAt:now,status:completed?"completed" as const:"paused" as const,...(completed?{completedAt:now}:{})};await studyBlockRepository.save(saved);setBlock(saved);setRunning(false);await recordSession(sessionElapsed);setMessage(completed?"Passada concluída e sessão registrada.":"Sessão registrada; o bloco continua pausado para retomada.");if(completed){const index=available.findIndex(n=>n.id===block.notebookId);const next=available.length>1?available[(index+1+available.length)%available.length]:undefined;setNotebookId(next?.id??block.notebookId);setBlock(undefined);setElapsed(0);setQuestion("");}reload();}catch(e){setMessage(e instanceof Error?e.message:"Não foi possível registrar a sessão.");}finally{setSaving(false);}}
  const nextNotebook=useMemo(()=>available.find((n,i)=>i>available.findIndex(x=>x.id===notebookId))??available[0],[available,notebookId]);
  return <><Header eyebrow="MÉTODO KYRLA / TATA" title="Estudar por passadas" subtitle="Cada passada tem 15 minutos líquidos em um único caderno. Interrompa e retome quando precisar."/>
