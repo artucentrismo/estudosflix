@@ -262,7 +262,6 @@ function StudyPage({disciplines,notebooks,subjects,notebookSubjects,dependencies
   }catch(e){setMessage(e instanceof Error?e.message:"Não foi possível finalizar a sessão.");}
   finally{setSaving(false);}
  }
- const nextNotebook=useMemo(()=>eligibleNotebooks.find((n,i)=>i>eligibleNotebooks.findIndex(x=>x.id===notebookId))??eligibleNotebooks[0],[eligibleNotebooks,notebookId]);
  return <><Header eyebrow="MÉTODO KYRLA / TATA" title="Seu ciclo de estudos" subtitle="Estude 15 minutos em cada caderno. A passada termina quando você percorre todo o ciclo."/>
  <div className="content-grid"><div className="panel timer-panel"><div className="panel-heading"><div><span className="eyebrow">PRÓXIMO CADERNO DO CICLO</span><h2>{block?notebooks.find(n=>n.id===block.notebookId)?.name??"Caderno selecionado":notebooks.find(n=>n.id===notebookId)?.name??"Prepare seu ciclo"}</h2></div><span className={running?"status-label success":"status-label warning"}>{running?"Em andamento":elapsed>=STUDY_BLOCK_SECONDS?"Concluído":"Pausado"}</span></div>
  <div className="timer-display">{fmt(elapsed)}<small> / 15:00</small></div><div className="trail-bar timer-bar"><span style={{width:progress.completionPercent+"%"}}/></div><div className="timer-caption"><span>{fmt(elapsed)} estudados</span><span>{fmt(progress.remainingSeconds)} restantes</span></div>
