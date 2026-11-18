@@ -2,23 +2,25 @@
 
 ## Decisão arquitetural
 
-Aplicativo desktop offline:
-- Tauri 2 para empacotamento desktop e acesso nativo.
-- React + TypeScript + Vite para interface.
-- Rust para serviços locais e regras críticas.
-- SQLite como banco de dados local.
-- Migrações SQL versionadas.
+Aplicação multiplataforma offline-first:
+- React + TypeScript + Vite como interface compartilhada.
+- PWA instalável para iPadOS/Safari e navegadores desktop.
+- Service worker para cache dos recursos da aplicação e abertura offline após a primeira carga.
+- IndexedDB como persistência local no navegador/iPad.
+- Tauri 2 + Rust + SQLite como opção de empacotamento desktop, usando a mesma camada de domínio.
+- Adaptadores de persistência por plataforma, com contratos comuns.
+- Migrações versionadas em cada adaptador.
 - Testes unitários para cálculos e regras de domínio.
 
-Nenhum servidor é necessário para executar o aplicativo.
+Nenhum servidor de aplicação é necessário. GitHub Pages pode hospedar os arquivos estáticos da PWA; os dados dos alunos não são enviados ao Pages.
 
 ## Camadas
 
 1. **Interface:** componentes React, navegação, formulários e acessibilidade.
 2. **Aplicação:** casos de uso (registrar sessão, recomendar estudo, revisar card, exportar backup).
 3. **Domínio:** entidades, validações e motores estatísticos/pedagógicos puros.
-4. **Persistência:** repositórios SQLite e migrações.
-5. **Desktop:** comandos Tauri para operações locais e diálogos de arquivo.
+4. **Persistência:** interface de repositórios e adaptadores IndexedDB (web/iPad) e SQLite (desktop), com migrações.
+5. **Plataforma:** service worker e manifest PWA no navegador; comandos Tauri e diálogos nativos no desktop.
 
 A interface não deve implementar fórmulas estatísticas. Ela solicita resultados ao domínio/camada de aplicação.
 
@@ -37,6 +39,14 @@ A interface não deve implementar fórmulas estatísticas. Ela solicita resultad
 - FlashcardReview
 - ReviewQueue
 - AppSettings
+
+## Persistência multiplataforma
+
+Definir contratos de repositório independentes da tecnologia: DisciplineRepository, SubjectRepository, NotebookRepository, SessionRepository, FlashcardRepository e SettingsRepository. A camada de aplicação não pode importar diretamente APIs do IndexedDB, rusqlite ou comandos Tauri.
+
+No navegador/iPad, usar IndexedDB com transações e versionamento de schema. Não depender de localStorage para dados de estudo; localStorage fica restrito a preferências simples como tema. No desktop, SQLite continua sendo o armazenamento primário.
+
+O backup deve usar um formato portátil versionado (JSON estruturado ou pacote equivalente), validado antes da importação e independente do banco de origem. A importação deve oferecer prévia e confirmação, com opção de backup preventivo.
 
 ## Modelo relacional inicial
 
@@ -103,12 +113,14 @@ Histórico de cálculo deve ser reproduzível a partir das sessões/exposições
 
 ## Etapas de implementação
 
-1. Especificação e arquitetura.
-2. Esqueleto Tauri + React + SQLite e migrações.
-3. Cadastros de disciplinas, assuntos, dependências e cadernos.
-4. Registro de sessões e segmentos.
-5. Motor de domínio, retenção, confiança e travas.
-6. Motor REE e fila diária.
-7. Painel, diagnóstico e relatórios.
-8. Backup/importação, configurações e polimento.
-9. Testes de integração, build desktop e documentação de distribuição.
+1. Especificação e arquitetura multiplataforma.
+2. Núcleo React + TypeScript, PWA responsiva, manifest e service worker.
+3. Persistência IndexedDB e migrações para web/iPad.
+4. Adaptador SQLite/Tauri para desktop, preservando o mesmo domínio.
+5. Cadastros de disciplinas, assuntos, dependências e cadernos.
+6. Registro de sessões e segmentos.
+7. Motor de domínio, retenção, confiança e travas.
+8. Motor REE e fila diária.
+9. Painel, diagnóstico e relatórios.
+10. Backup/importação entre plataformas, configurações e polimento.
+11. Testes em Safari no iPad, navegadores desktop, modo offline, build desktop e documentação de distribuição.
