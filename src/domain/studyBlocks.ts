@@ -31,13 +31,14 @@ export type StudyBlockProgress = {
   isComplete: boolean;
 };
 
-export function getStudyBlockProgress(block: Pick<StudyBlock, "elapsedSeconds">): StudyBlockProgress {
-  const elapsedSeconds = Math.min(STUDY_BLOCK_SECONDS, Math.max(0, Math.floor(block.elapsedSeconds)));
+export function getStudyBlockProgress(block: Pick<StudyBlock, "elapsedSeconds">, durationSeconds = STUDY_BLOCK_SECONDS): StudyBlockProgress {
+  const duration = Math.max(1, Math.floor(durationSeconds));
+  const elapsedSeconds = Math.min(duration, Math.max(0, Math.floor(block.elapsedSeconds)));
   return {
     elapsedSeconds,
-    remainingSeconds: STUDY_BLOCK_SECONDS - elapsedSeconds,
-    completionPercent: (elapsedSeconds / STUDY_BLOCK_SECONDS) * 100,
-    isComplete: elapsedSeconds >= STUDY_BLOCK_SECONDS,
+    remainingSeconds: duration - elapsedSeconds,
+    completionPercent: (elapsedSeconds / duration) * 100,
+    isComplete: elapsedSeconds >= duration,
   };
 }
 
