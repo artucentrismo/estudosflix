@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import "fake-indexeddb/auto";
 import {
   DATABASE_NAME,
+  DATABASE_VERSION,
   STORE_NAMES,
   closeDatabaseForTests,
   getAllRecords,
@@ -22,7 +23,7 @@ describe("EstudosFlix IndexedDB foundation", () => {
     });
   });
 
-  it("creates every version-one store", async () => {
+  it("creates every version-two store and study block indexes", async () => {
     await putRecord("disciplines", {
       id: "discipline-1",
       name: "Matemática",
@@ -34,6 +35,9 @@ describe("EstudosFlix IndexedDB foundation", () => {
       request.onerror = () => reject(request.error);
     });
     expect([...db.objectStoreNames]).toEqual(expect.arrayContaining([...STORE_NAMES]));
+    expect(db.version).toBe(DATABASE_VERSION);
+    const blocks = db.transaction("studyBlocks", "readonly").objectStore("studyBlocks");
+    expect([...blocks.indexNames]).toEqual(expect.arrayContaining(["disciplineId", "notebookId", "status"]));
     db.close();
   });
 
