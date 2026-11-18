@@ -49,6 +49,7 @@ export default function App(){
   const [dependencies,setDependencies]=useState<DependencyRecord[]>([]);
   const [plans,setPlans]=useState<PlanRecord[]>([]);
   const [planItems,setPlanItems]=useState<PlanItemRecord[]>([]);
+  const [reviewLimit,setReviewLimit]=useState(30);
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState("");
   const [refresh,setRefresh]=useState(0);
@@ -57,12 +58,12 @@ export default function App(){
   const reload=useCallback(async()=>{
     if(!loadedRef.current)setLoading(true); setError("");
     try{
-      const [d,n,s,h,b,fc,sg,dp,pl,pi,theme]=await Promise.all([
+      const [d,n,s,h,b,fc,sg,dp,pl,pi,theme,limit]=await Promise.all([
         disciplineRepository.list(),notebookRepository.list(),subjectRepository.list(),
-        sessionRepository.list(),studyBlockRepository.list(),flashcardRepository.list(),sessionSegmentRepository.list(),subjectDependencyRepository.list(),studyPlanRepository.list(),studyPlanItemRepository.list(),settingsRepository.get("theme") as Promise<string | undefined>
+        sessionRepository.list(),studyBlockRepository.list(),flashcardRepository.list(),sessionSegmentRepository.list(),subjectDependencyRepository.list(),studyPlanRepository.list(),studyPlanItemRepository.list(),settingsRepository.get("theme") as Promise<string | undefined>,settingsRepository.get("reviewLimit") as Promise<number | undefined>
       ]);
       setDisciplines(d as Row[]); setNotebooks(n as Row[]); setSubjects(s as Row[]);
-      setSessions(h as Session[]); setBlocks(b); setFlashcards(fc as Flashcard[]); setSessionSegments(sg as SegmentRecord[]); setDependencies(dp as DependencyRecord[]); setPlans(pl as PlanRecord[]); setPlanItems(pi as PlanItemRecord[]); setDark(theme==="dark");
+      setSessions(h as Session[]); setBlocks(b); setFlashcards(fc as Flashcard[]); setSessionSegments(sg as SegmentRecord[]); setDependencies(dp as DependencyRecord[]); setPlans(pl as PlanRecord[]); setPlanItems(pi as PlanItemRecord[]); setReviewLimit([20,30,50].includes(Number(limit))?Number(limit):30); setDark(theme==="dark");
     }catch(e){setError(e instanceof Error?e.message:"Não foi possível carregar os dados locais.");}
     finally{loadedRef.current=true;setLoading(false);}
   },[]);
@@ -83,19 +84,19 @@ export default function App(){
       <div className="page-content">
         {error&&<div className="demo-notice" role="alert">{error}</div>}
         {loading?<div className="panel"><p>Carregando seus dados locais…</p></div>:null}
-        {!loading&&section==="Painel"&&<Dashboard disciplines={disciplines} notebooks={notebooks} sessions={sessions} blocks={blocks} flashcards={flashcards} onGo={setSection}/>}
+        {!loading&&section==="Painel"&&<Dashboard disciplines={disciplines} notebooks={notebooks} sessions={sessions} blocks={blocks} flashcards={flashcards} reviewLimit={reviewLimit} onGo={setSection}/>}
         {!loading&&section==="Estudar"&&<StudyPage disciplines={disciplines} notebooks={notebooks} subjects={subjects} blocks={blocks} reload={()=>setRefresh(x=>x+1)}/>}
         {!loading&&section==="Plano de Estudos"&&<PlanPage disciplines={disciplines} plans={plans} items={planItems} reload={()=>setRefresh(x=>x+1)}/>}
         {!loading&&section==="Disciplinas"&&<DisciplinePage disciplines={disciplines} reload={()=>setRefresh(x=>x+1)}/>}
         {!loading&&section==="Assuntos"&&<SubjectPage disciplines={disciplines} subjects={subjects} reload={()=>setRefresh(x=>x+1)}/>}
         {!loading&&section==="Assuntos"&&<SubjectPage disciplines={disciplines} subjects={subjects} reload={()=>setRefresh(x=>x+1)}/>}
         {!loading&&section==="Cadernos"&&<NotebookPage disciplines={disciplines} notebooks={notebooks} reload={()=>setRefresh(x=>x+1)}/>}
-        {!loading&&section==="Flashcards"&&<FlashcardsPage disciplines={disciplines} subjects={subjects} cards={flashcards} reload={()=>setRefresh(x=>x+1)}/>}
+        {!loading&&section==="Flashcards"&&<FlashcardsPage disciplines={disciplines} subjects={subjects} cards={flashcards} limit={reviewLimit} setLimit={setReviewLimit} reload={()=>setRefresh(x=>x+1)}/>}
         {!loading&&section==="Histórico"&&<HistoryPage sessions={sessions} disciplines={disciplines} notebooks={notebooks}/>}
         {!loading&&section==="Pré-requisitos"&&<DependenciesPage subjects={subjects} dependencies={dependencies} reload={()=>setRefresh(x=>x+1)}/>}
         {!loading&&section==="Diagnóstico"&&<AnalysisPage subjects={subjects} segments={sessionSegments} dependencies={dependencies} mode="diagnosis"/>}
         {!loading&&section==="Relatórios"&&<AnalysisPage subjects={subjects} segments={sessionSegments} dependencies={dependencies} mode="reports"/>}
-        {!loading&&section==="Configurações"&&<SettingsPage dark={dark} setDark={setDark} reload={()=>setRefresh(x=>x+1)}/>}
+        {!loading&&section==="Configurações"&&<SettingsPage dark={dark} setDark={setDark} reviewLimit={reviewLimit} setReviewLimit={setReviewLimit} reload={()=>setRefresh(x=>x+1)}/>}
       </div>
     </main>
   </div>;
@@ -104,11 +105,11 @@ export default function App(){
 function Header({eyebrow,title,subtitle}:{eyebrow:string;title:string;subtitle:string}){
  return <div className="welcome-row"><div><div className="eyebrow">{eyebrow}</div><h1>{title}</h1><p>{subtitle}</p></div></div>;
 }
-function Dashboard({disciplines,notebooks,sessions,blocks,flashcards,onGo}:{disciplines:Row[];notebooks:Row[];sessions:Session[];blocks:StudyBlock[];flashcards:Flashcard[];onGo:(s:Section)=>void}){
+function Dashboard({disciplines,notebooks,sessions,blocks,flashcards,reviewLimit,onGo}:{disciplines:Row[];notebooks:Row[];sessions:Session[];blocks:StudyBlock[];flashcards:Flashcard[];reviewLimit:number;onGo:(s:Section)=>void}){
  const total=sessions.reduce((a,s)=>a+s.durationSeconds,0);
  const passes=sessions.reduce((a,s)=>a+Math.floor(s.durationSeconds/STUDY_BLOCK_SECONDS),0);
  const activeBlock=blocks.find(b=>b.status==="paused"||b.status==="in_progress");
- const dueCards=selectDailyReviewQueue(flashcards).length;
+ const dueCards=selectDailyReviewQueue(flashcards,new Date(),reviewLimit).length;
  const activeNotebook=activeBlock?notebooks.find(n=>n.id===activeBlock.notebookId):undefined;
  return <><Header eyebrow="VISÃO GERAL" title="Seu espaço de estudos" subtitle="Organize suas passadas, acompanhe seu tempo e retome de onde parou."/>
  <div className="metric-grid">
@@ -252,16 +253,16 @@ function AnalysisPage({subjects,segments,dependencies,mode}:{subjects:Row[];segm
  <p className="muted-copy small-copy">Bloqueios usam o índice (100 − domínio do pré-requisito) × intensidade da dependência. A confirmação exige pelo menos 30 questões e duas exposições válidas; ausência de dados nunca é tratada como domínio saudável.</p>
  </>;
 }
-function FlashcardsPage({disciplines,subjects,cards,reload}:{disciplines:Row[];subjects:Row[];cards:Flashcard[];reload:()=>void}){
+function FlashcardsPage({disciplines,subjects,cards,limit,setLimit,reload}:{disciplines:Row[];subjects:Row[];cards:Flashcard[];limit:number;setLimit:(n:number)=>void;reload:()=>void}){
  const [subjectId,setSubjectId]=useState(subjects[0]?.id??"");const [front,setFront]=useState("");const [back,setBack]=useState("");
  const [activeId,setActiveId]=useState<string|undefined>();const [revealed,setRevealed]=useState(false);const [startedAt,setStartedAt]=useState(0);const [message,setMessage]=useState("");
- const queue=selectDailyReviewQueue(cards,new Date(),30);const current=queue.find(c=>c.id===activeId)??queue[0];
+ const queue=selectDailyReviewQueue(cards,new Date(),limit);const current=queue.find(c=>c.id===activeId)??queue[0];
  useEffect(()=>{if(current){setStartedAt(Date.now());setRevealed(false);}},[current?.id]);
  async function create(e:FormEvent){e.preventDefault();if(!subjectId||!front.trim()||!back.trim())return;const duplicate=cards.find(c=>c.subjectId===subjectId&&c.front.trim().toLowerCase()===front.trim().toLowerCase()&&!c.archived);const now=nowIso();if(duplicate){await flashcardRepository.save({...duplicate,back:back.trim(),updatedAt:now});setMessage("Card existente atualizado para evitar duplicação.");}else{const card:Flashcard={id:makeId(),createdAt:now,updatedAt:now,subjectId,front:front.trim(),back:back.trim(),level:0,consecutiveCorrect:0,reviewCount:0,responseTimeTotalMs:0,responseTimeCount:0,nextReviewAt:now,archived:false};await flashcardRepository.save(card);setMessage("Flashcard criado e incluído na fila de revisão.");}setFront("");setBack("");reload();}
  function beginReview(card:Flashcard){setActiveId(card.id);setRevealed(false);setStartedAt(Date.now());}
  async function grade(remembered:boolean){if(!current)return;const now=nowIso();const result=reviewFlashcard(current,remembered,Math.max(0,Date.now()-startedAt),now);await flashcardRepository.save(result.card);await flashcardReviewRepository.save(result.review);setActiveId(undefined);setRevealed(false);setMessage(result.card.archived?"Card arquivado automaticamente após evidência consistente.":remembered?"Revisão registrada.":"Card voltou ao início da sequência de revisão.");reload();}
  const activeCards=cards.filter(c=>!c.archived);
- return <><Header eyebrow="ESTUDAR / REVISÕES" title="Flashcards" subtitle="Cards curtos para corrigir lacunas identificadas durante a prática de questões."/><div className="metric-grid"><Metric icon={<Brain/>} label="Cards ativos" value={String(activeCards.length)} detail="No seu acervo"/><Metric icon={<CalendarDays/>} label="Para revisar hoje" value={String(queue.length)} detail="Limite diário de 30"/><Metric icon={<Check/>} label="Arquivados" value={String(cards.filter(c=>c.archived).length)} detail="Mantidos no histórico"/><Metric icon={<Target/>} label="Assuntos cobertos" value={String(new Set(cards.map(c=>c.subjectId)).size)} detail="Com flashcards"/></div>
+ return <><Header eyebrow="ESTUDAR / REVISÕES" title="Flashcards" subtitle="Cards curtos para corrigir lacunas identificadas durante a prática de questões."/><div className="metric-grid"><Metric icon={<Brain/>} label="Cards ativos" value={String(activeCards.length)} detail="No seu acervo"/><Metric icon={<CalendarDays/>} label="Para revisar hoje" value={String(queue.length)} detail={"Limite diário de "+limit}/><Metric icon={<Check/>} label="Arquivados" value={String(cards.filter(c=>c.archived).length)} detail="Mantidos no histórico"/><Metric icon={<Target/>} label="Assuntos cobertos" value={String(new Set(cards.map(c=>c.subjectId)).size)} detail="Com flashcards"/></div>
  <div className="content-grid"><form className="panel form-panel" onSubmit={create}><h2>Novo flashcard</h2><label>Assunto de origem<select value={subjectId} onChange={e=>setSubjectId(e.target.value)} required><option value="">Selecione</option>{subjects.map(s=><option key={s.id} value={s.id}>{disciplines.find(d=>d.id===s.disciplineId)?.name} · {s.name}</option>)}</select></label><label>Pergunta<input value={front} onChange={e=>setFront(e.target.value)} placeholder="Uma pergunta direta, um conceito" required/></label><label>Resposta<textarea value={back} onChange={e=>setBack(e.target.value)} placeholder="Resposta curta e objetiva" required/></label><button className="button primary" disabled={!subjects.length}><Plus size={16}/> Criar flashcard</button>{!subjects.length&&<p className="muted-copy">Cadastre um assunto primeiro.</p>}</form>
  <div className="panel review-panel"><div className="panel-heading"><div><span className="eyebrow">FILA DIÁRIA</span><h2>Revisar agora</h2></div><span className="status-label success">{queue.length} / 30</span></div>{current?<><div className="review-card"><span className="eyebrow">PERGUNTA</span><h3>{current.front}</h3>{revealed?<div className="review-answer"><span className="eyebrow">RESPOSTA</span><p>{current.back}</p></div>:<button className="button secondary" onClick={()=>{setRevealed(true);setStartedAt(startedAt||Date.now());}}>Mostrar resposta</button>}</div>{revealed&&<div className="timer-actions"><button className="button secondary" onClick={()=>void grade(false)}>Não lembrei</button><button className="button primary" onClick={()=>void grade(true)}>Lembrei</button></div>}</>:<p className="muted-copy">Sua fila está vazia. Crie flashcards a partir de lacunas ou volte às questões para identificar novos conceitos.</p>}{message&&<p className="muted-copy" role="status">{message}</p>}</div></div>
  <div className="panel"><div className="panel-heading"><h2>Biblioteca de flashcards</h2><b>{cards.length}</b></div>{cards.length===0?<p className="muted-copy">Nenhum flashcard cadastrado.</p>:cards.map(card=><div className="diagnostic-row" key={card.id}><span className={card.archived?"diagnostic-dot green-dot":"diagnostic-dot blue-dot"}/><div><strong>{card.front}</strong><small>{subjects.find(s=>s.id===card.subjectId)?.name??"Assunto"} · {card.archived?"Arquivado":`${card.consecutiveCorrect} acertos consecutivos · próxima revisão ${new Date(card.nextReviewAt).toLocaleDateString("pt-BR")}`}</small></div>{!card.archived&&<button className="text-button" onClick={()=>beginReview(card)}>Revisar</button>}</div>)}</div>
@@ -271,7 +272,7 @@ function HistoryPage({sessions,disciplines,notebooks}:{sessions:Session[];discip
  const total=sessions.reduce((a,s)=>a+s.durationSeconds,0);
  return <><Header eyebrow="ANÁLISE" title="Histórico de sessões" subtitle="Consulte o tempo investido e o desempenho que você registrou."/><div className="metric-grid"><Metric icon={<Clock3/>} label="Tempo total" value={fmt(total)} detail="Somatório registrado"/><Metric icon={<CalendarDays/>} label="Sessões" value={String(sessions.length)} detail="Registros salvos"/><Metric icon={<Target/>} label="Questões" value={String(sessions.reduce((a,s)=>a+s.questions,0))} detail="Questões registradas"/><Metric icon={<Check/>} label="Acertos" value={String(sessions.reduce((a,s)=>a+s.correct,0))} detail="Respostas corretas"/></div><div className="panel"><h2>Registros</h2>{sessions.length===0?<p className="muted-copy">Nenhuma sessão registrada ainda.</p>:sessions.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(s=><div className="diagnostic-row" key={s.id}><span className="diagnostic-dot green-dot"/><div><strong>{disciplines.find(d=>d.id===s.disciplineId)?.name??"Disciplina"} · {notebooks.find(n=>n.id===s.notebookId)?.name??"Caderno"}</strong><small>{new Date(s.date).toLocaleString("pt-BR")} · {fmt(s.durationSeconds)} · {s.questions} questões</small></div><b>{s.questions?Math.round(s.correct/s.questions*100)+"%":"—"}</b></div>)}</div></>;
 }
-function SettingsPage({dark,setDark,reload}:{dark:boolean;setDark:(v:boolean)=>void;reload:()=>void}){
+function SettingsPage({dark,setDark,reviewLimit,setReviewLimit,reload}:{dark:boolean;setDark:(v:boolean)=>void;reviewLimit:number;setReviewLimit:(n:number)=>void;reload:()=>void}){
  const [message,setMessage]=useState("");
  async function exportData(){const [disciplines,notebooks,subjects,dependencies,plans,planItems,sessions,sessionSegments,blocks,flashcards,flashcardReviews]=await Promise.all([disciplineRepository.list(),notebookRepository.list(),subjectRepository.list(),subjectDependencyRepository.list(),studyPlanRepository.list(),studyPlanItemRepository.list(),sessionRepository.list(),sessionSegmentRepository.list(),studyBlockRepository.list(),flashcardRepository.list(),flashcardReviewRepository.list()]);const payload={format:"estudosflix-backup",version:3,exportedAt:nowIso(),data:{disciplines,notebooks,subjects,dependencies,plans,planItems,sessions,sessionSegments,blocks,flashcards,flashcardReviews}};const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="backup-estudosflix-"+new Date().toISOString().slice(0,10)+".json";a.click();URL.revokeObjectURL(url);setMessage("Backup exportado.");}
  async function importData(file?:File){
@@ -292,5 +293,5 @@ function SettingsPage({dark,setDark,reload}:{dark:boolean;setDark:(v:boolean)=>v
    reload();
   }catch(e){setMessage(e instanceof Error?e.message:"Falha ao importar backup.");}
  }
- return <><Header eyebrow="SISTEMA" title="Configurações" subtitle="Ajuste a aparência e cuide dos seus dados locais."/><div className="content-grid"><div className="panel"><h2>Aparência</h2><p className="muted-copy">Escolha o tema que prefere utilizar.</p><button className="button secondary" onClick={()=>setDark(!dark)}>{dark?<Sun size={16}/>:<Moon size={16}/>} Ativar tema {dark?"claro":"escuro"}</button></div><div className="panel"><h2>Backup e restauração</h2><p className="muted-copy">Seus dados ficam neste navegador. Exporte um arquivo para transferir ou guardar uma cópia.</p><div className="recommend-actions"><button className="button primary" onClick={()=>void exportData()}><Download size={16}/> Baixar backup</button><label className="button secondary file-button"><Upload size={16}/> Importar<input type="file" accept="application/json,.json" onChange={e=>void importData(e.target.files?.[0])}/></label></div>{message&&<p className="muted-copy" role="status">{message}</p>}</div></div><div className="panel"><h2>Privacidade</h2><p className="muted-copy">O EstudosFlix utiliza armazenamento local do navegador. Limpar os dados do site ou trocar de dispositivo pode apagar ou tornar indisponíveis seus registros. Mantenha backups atualizados.</p></div></>;
+ return <><Header eyebrow="SISTEMA" title="Configurações" subtitle="Ajuste a aparência e cuide dos seus dados locais."/><div className="content-grid"><div className="panel"><h2>Aparência</h2><p className="muted-copy">Escolha o tema que prefere utilizar.</p><button className="button secondary" onClick={()=>setDark(!dark)}>{dark?<Sun size={16}/>:<Moon size={16}/>} Ativar tema {dark?"claro":"escuro"}</button></div><div className="panel"><h2>Backup e restauração</h2><p className="muted-copy">Seus dados ficam neste navegador. Exporte um arquivo para transferir ou guardar uma cópia.</p><div className="recommend-actions"><button className="button primary" onClick={()=>void exportData()}><Download size={16}/> Baixar backup</button><label className="button secondary file-button"><Upload size={16}/> Importar<input type="file" accept="application/json,.json" onChange={e=>void importData(e.target.files?.[0])}/></label></div>{message&&<p className="muted-copy" role="status">{message}</p>}</div></div><div className="panel"><h2>Meta diária de flashcards</h2><p className="muted-copy">Ajuste o volume de revisões conforme seu ritmo.</p><select className="compact-select" value={reviewLimit} onChange={e=>{const value=Number(e.target.value);setReviewLimit(value);void settingsRepository.set("reviewLimit",value);}}><option value={20}>Iniciante · 20 por dia</option><option value={30}>Intermediário · 30 por dia</option><option value={50}>Avançado · 50 por dia</option></select></div><div className="panel"><h2>Privacidade</h2><p className="muted-copy">O EstudosFlix utiliza armazenamento local do navegador. Limpar os dados do site ou trocar de dispositivo pode apagar ou tornar indisponíveis seus registros. Mantenha backups atualizados.</p></div></>;
 }
