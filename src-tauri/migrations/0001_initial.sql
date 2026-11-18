@@ -102,3 +102,20 @@ CREATE INDEX IF NOT EXISTS idx_segments_subject ON session_segments(subject_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_started ON study_sessions(started_at);
 CREATE INDEX IF NOT EXISTS idx_flashcards_status ON flashcards(status);
 CREATE INDEX IF NOT EXISTS idx_reviews_card_date ON flashcard_reviews(flashcard_id, reviewed_at);
+
+CREATE TABLE IF NOT EXISTS exposures (
+  id TEXT PRIMARY KEY NOT NULL,
+  subject_id TEXT NOT NULL REFERENCES subjects(id) ON DELETE CASCADE,
+  session_segment_id TEXT NOT NULL UNIQUE REFERENCES session_segments(id) ON DELETE CASCADE,
+  exposure_number INTEGER NOT NULL,
+  questions INTEGER NOT NULL CHECK(questions > 0),
+  correct_answers INTEGER NOT NULL CHECK(correct_answers >= 0 AND correct_answers <= questions),
+  exposed_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS app_settings (
+  key TEXT PRIMARY KEY NOT NULL,
+  value_json TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_exposures_subject_date ON exposures(subject_id, exposed_at);
