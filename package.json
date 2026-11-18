@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build",\n    "test": "vitest run",
     "preview": "vite preview",
     "tauri": "tauri"
   },
@@ -21,6 +21,6 @@
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
     "typescript": "~5.6.2",
-    "vite": "^6.0.1"
+    "vite": "^6.0.1",\n    "vitest": "^2.1.8"
   }
 }
