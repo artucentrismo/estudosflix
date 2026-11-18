@@ -46,7 +46,8 @@ export function reconcileStudyCycle(
   }
   const currentId = progress.notebookIds[progress.currentNotebookIndex];
   const currentIndex = currentId ? ordered.indexOf(currentId) : -1;
-  const visitedNotebookIds = (progress.visitedNotebookIds ?? []).filter(id => ordered.includes(id));
+  const legacyVisited = Array.isArray(progress.visitedNotebookIds) ? progress.visitedNotebookIds : progress.notebookIds.slice(0, Math.max(0, progress.currentNotebookIndex));
+  const visitedNotebookIds = legacyVisited.filter(id => ordered.includes(id));
   const nextIndex = currentIndex >= 0
     ? currentIndex
     : ordered.findIndex(id => !visitedNotebookIds.includes(id));
