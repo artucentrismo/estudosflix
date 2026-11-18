@@ -53,6 +53,7 @@ export function createSettingRepository<T = unknown>() {
 
 export const disciplineRepository = createRepository("disciplines");
 export const subjectRepository = createRepository("subjects");
+export const subjectDependencyRepository = createRepository("subjectDependencies");
 export const notebookRepository = createRepository("notebooks");
 export const sessionRepository = createRepository("sessions");
 export const sessionSegmentRepository = createRepository("sessionSegments");
