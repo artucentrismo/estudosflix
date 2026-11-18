@@ -1,6 +1,5 @@
 import {
   createRecordId,
-  createTimestamps,
   deleteRecord,
   getAllRecords,
   getRecord,
@@ -53,6 +52,7 @@ export const disciplineRepository = createRepository("disciplines");
 export const subjectRepository = createRepository("subjects");
 export const notebookRepository = createRepository("notebooks");
 export const sessionRepository = createRepository("sessions");
+export const studyBlockRepository = createRepository("studyBlocks");
 export const flashcardRepository = createRepository("flashcards");
 export const settingsRepository = createSettingRepository();
 
