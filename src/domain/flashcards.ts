@@ -2,6 +2,7 @@ import type { BaseRecord } from "../storage/database";
 
 export const REE_INTERVAL_DAYS = [1, 3, 7, 15, 30, 60] as const;
 export const DEFAULT_DAILY_REVIEW_LIMIT = 30;
+export const MAX_DAILY_REVIEW_LIMIT = 50;
 export const MAX_CONSECUTIVE_CORRECT = 5;
 export const ARCHIVE_RESPONSE_TIME_MS = 5000;
 
@@ -94,5 +95,5 @@ export function selectDailyReviewQueue(
   return cards
     .filter(card => !card.archived && new Date(card.nextReviewAt).getTime() <= timestamp)
     .sort((a, b) => calculateFlashcardPriority(b, now) - calculateFlashcardPriority(a, now) || new Date(a.nextReviewAt).getTime() - new Date(b.nextReviewAt).getTime())
-    .slice(0, Math.max(0, Math.min(limit, DEFAULT_DAILY_REVIEW_LIMIT)));
+    .slice(0, Math.max(0, Math.min(limit, MAX_DAILY_REVIEW_LIMIT)));
 }
