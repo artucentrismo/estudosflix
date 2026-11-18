@@ -47,7 +47,13 @@ describe("bloco pedagógico de 15 minutos", () => {
     expect(canAdvanceToNextNotebook(completed)).toBe(true);
   });
 
-  it("supports a 15-second accelerated timer only when explicitly configured", () => {\n    const progress = getStudyBlockProgress({ elapsedSeconds: 9 }, 15);\n    expect(progress.remainingSeconds).toBe(6);\n    expect(progress.completionPercent).toBe(60);\n  });\n\n  it("não permite acumular mais de 15 minutos no mesmo bloco", () => {
+  it("supports a 15-second accelerated timer only when explicitly configured", () => {
+    const progress = getStudyBlockProgress({ elapsedSeconds: 9 }, 15);
+    expect(progress.remainingSeconds).toBe(6);
+    expect(progress.completionPercent).toBe(60);
+  });
+
+  it("não permite acumular mais de 15 minutos no mesmo bloco", () => {
     const completed = addStudyTime(block, 20 * 60);
     expect(completed.elapsedSeconds).toBe(STUDY_BLOCK_SECONDS);
   });
