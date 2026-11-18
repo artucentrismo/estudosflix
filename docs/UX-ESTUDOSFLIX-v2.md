@@ -55,7 +55,7 @@ Cadastro de caderno:
 - Nome do caderno.
 - Numeração automática conforme a ordem.
 
-A área Disciplinas também permite editar nomes e reordenar cadernos por controles acessíveis de mover para cima/baixo. A aba Ciclo apenas visualiza.
+A área Disciplinas também permite editar nomes, reordenar as matérias do ciclo geral e reordenar cadernos por controles acessíveis de mover para cima/baixo. A aba Ciclo apenas visualiza.
 
 ## Revisões
 
