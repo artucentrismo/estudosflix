@@ -299,6 +299,15 @@ function SettingsPage({dark,setDark,reviewLimit,setReviewLimit,reload}:{dark:boo
    const normalized:Record<string,unknown[]>={};let count=0;
    for(const key of keys){const rows=payload.data[key]??[];if(!Array.isArray(rows))throw new Error("O backup contém uma lista inválida: "+key+".");for(const row of rows){if(!row||typeof row!=="object")throw new Error("Registro inválido no grupo "+key+".");const record=row as {id?:unknown;key?:unknown;createdAt?:unknown;updatedAt?:unknown};if(key==="settings"?typeof record.key!=="string"||typeof record.updatedAt!=="string":typeof record.id!=="string"||typeof record.createdAt!=="string"||typeof record.updatedAt!=="string")throw new Error("Registro inválido no grupo "+key+".");}normalized[storeMap[key]]=rows;count+=rows.length;}
    if(count===0)throw new Error("O backup não contém registros para importar.");
+   const hasRef=(key:string,id:unknown)=>typeof id==="string"&&Boolean(normalized[storeMap[key]]?.some(row=>(row as {id?:string}).id===id));
+   const checkRefs=(key:string,field:string,target:string)=>{for(const row of normalized[storeMap[key]]??[]){const id=(row as Record<string,unknown>)[field];if(id!==undefined&&id!==null&&!hasRef(target,id))throw new Error("Referência inválida em "+key+": "+field+".");}};
+   checkRefs("notebooks","disciplineId","disciplines");checkRefs("subjects","disciplineId","disciplines");
+   checkRefs("dependencies","prerequisiteSubjectId","subjects");checkRefs("dependencies","dependentSubjectId","subjects");
+   checkRefs("planItems","planId","plans");checkRefs("planItems","disciplineId","disciplines");
+   checkRefs("sessions","disciplineId","disciplines");checkRefs("sessions","notebookId","notebooks");
+   checkRefs("sessionSegments","sessionId","sessions");checkRefs("sessionSegments","subjectId","subjects");
+   checkRefs("blocks","disciplineId","disciplines");checkRefs("blocks","notebookId","notebooks");
+   checkRefs("flashcards","subjectId","subjects");checkRefs("flashcardReviews","flashcardId","flashcards");
    const preview=keys.map(key=>key+": "+(normalized[storeMap[key]]?.length??0)).join("\n");
    if(!confirm("Prévia do backup ("+count+" registros):\n"+preview+"\n\nA importação mescla os dados por identificador. Antes, será baixada uma cópia preventiva dos dados atuais. Continuar?"))return;
    await exportData();
