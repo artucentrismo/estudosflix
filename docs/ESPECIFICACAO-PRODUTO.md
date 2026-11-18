@@ -2,7 +2,7 @@
 
 ## 1. Visão do produto
 
-O EstudosFlix é um aplicativo desktop, local e totalmente offline para gerenciamento de estudos por questões. O estudante resolve questões em plataformas externas e registra os resultados no aplicativo. O sistema organiza o conhecimento, acompanha o desempenho, identifica dificuldades e recomenda a próxima ação de estudo.
+O EstudosFlix é um aplicativo multiplataforma, local e totalmente offline para gerenciamento de estudos por questões, utilizável em computadores e iPads. A experiência principal será uma aplicação web instalável (PWA), com possibilidade de empacotamento desktop. O estudante resolve questões em plataformas externas e registra os resultados no aplicativo. O sistema organiza o conhecimento, acompanha o desempenho, identifica dificuldades e recomenda a próxima ação de estudo.
 
 **Promessa:** responder com clareza “o que devo estudar agora?” sem transformar o gerenciamento do estudo em mais uma tarefa pesada.
 
@@ -266,7 +266,19 @@ Tema escuro:
 
 Estados obrigatórios: vazio, carregamento, sucesso, erro, confirmação, baixa confiança e dados insuficientes. Tema claro/escuro deve ser totalmente funcional.
 
-## 13. Privacidade, backup e dados
+## 13. Compatibilidade multiplataforma
+
+A aplicação web será responsiva e instalável como PWA em iPadOS (Safari) e navegadores desktop compatíveis. Deve suportar orientação retrato e paisagem, toque, áreas seguras do iPad, teclado externo e layouts sem hover obrigatório. O service worker disponibiliza os arquivos da aplicação offline após a primeira instalação/carregamento completo.
+
+O armazenamento será abstraído por uma interface de repositório:
+- Web/PWA: IndexedDB, com migrações e transações locais.
+- Desktop empacotado: SQLite local.
+
+As regras de domínio e cálculos são compartilhados e independentes da plataforma. O modelo lógico dos dados e o formato de backup são comuns aos dois ambientes.
+
+No MVP não há sincronização entre dispositivos. Cada instalação mantém seus próprios dados; a transferência ocorre por exportação e importação de backup.
+
+## 14. Privacidade, backup e dados
 
 - Banco SQLite armazenado localmente.
 - Backup exportado pelo usuário para arquivo local.
@@ -274,7 +286,7 @@ Estados obrigatórios: vazio, carregamento, sucesso, erro, confirmação, baixa 
 - Nenhum dado pessoal é enviado ao GitHub.
 - Sem telemetria remota.
 
-## 14. Critérios de aceite do MVP
+## 15. Critérios de aceite do MVP
 
 1. Criar disciplinas, assuntos, subassuntos e dependências.
 2. Criar cadernos e organizar assuntos em sequência.
@@ -288,5 +300,7 @@ Estados obrigatórios: vazio, carregamento, sucesso, erro, confirmação, baixa 
 10. Gerar recomendação explicável de próximo estudo.
 11. Exibir diagnóstico e relatórios locais.
 12. Exportar/importar backup local.
-13. Funcionar sem conexão com a internet.
-14. Não incluir IA, APIs externas ou serviços em nuvem.
+13. Funcionar sem conexão com a internet após a instalação/carregamento inicial.
+14. Ser utilizável em iPad, em retrato e paisagem, com interação por toque.
+15. Permitir instalação como PWA e manter os dados locais após fechar/reabrir.
+16. Não incluir IA, APIs externas ou serviços em nuvem.
