@@ -86,7 +86,7 @@ Domínio, retenção, tendência, travas e indicadores de flashcards são calcul
 
 ## RF-TESTE-001 — Isolamento de testes
 
-Testes acelerados não podem contaminar estatísticas reais. O modo de desenvolvedor deve usar relógio acelerado apenas em ambiente explicitamente identificado como teste e nunca misturar registros de teste com o histórico real.
+Testes acelerados não podem contaminar estatísticas reais. No ambiente de desenvolvimento, os blocos duram 15 segundos e usam um banco IndexedDB separado (sandbox). A publicação usa 15 minutos e o banco real. O sandbox não é ativado na versão de produção e seus registros não se misturam com o histórico real.
 
 ## Princípio inegociável
 
