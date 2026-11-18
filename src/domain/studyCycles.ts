@@ -2,6 +2,8 @@ export type StudyCycleProgress = {
   disciplineId: string;
   notebookIds: string[];
   currentNotebookIndex: number;
+  /** IDs already visited during the current pass; position is never used as identity. */
+  visitedNotebookIds: string[];
   completedPasses: number;
   updatedAt: string;
 };
@@ -22,6 +24,7 @@ export function createStudyCycleProgress(
     disciplineId,
     notebookIds: [...notebookIds],
     currentNotebookIndex: 0,
+    visitedNotebookIds: [],
     completedPasses: 0,
     updatedAt,
   };
@@ -39,40 +42,64 @@ export function reconcileStudyCycle(
   }
   const currentId = progress.notebookIds[progress.currentNotebookIndex];
   const currentIndex = currentId ? ordered.indexOf(currentId) : -1;
+  const visitedNotebookIds = (progress.visitedNotebookIds ?? []).filter(id => ordered.includes(id));
+  const nextIndex = currentIndex >= 0
+    ? currentIndex
+    : ordered.findIndex(id => !visitedNotebookIds.includes(id));
   return {
     ...progress,
     notebookIds: ordered,
-    currentNotebookIndex: currentIndex >= 0
-      ? currentIndex
-      : Math.min(progress.currentNotebookIndex, Math.max(0, ordered.length - 1)),
+    visitedNotebookIds,
+    currentNotebookIndex: nextIndex >= 0 ? nextIndex : 0,
     updatedAt,
   };
 }
 
 export function getCycleProgressPercent(progress: StudyCycleProgress): number {
   if (progress.notebookIds.length === 0) return 0;
-  return Math.round((progress.currentNotebookIndex / progress.notebookIds.length) * 100);
+  const visited = progress.visitedNotebookIds ?? [];
+  return Math.round((visited.filter(id => progress.notebookIds.includes(id)).length / progress.notebookIds.length) * 100);
 }
 
+/**
+ * Records a completed visit, not a 15-minute threshold.
+ * Pausing a partial block must not call this; an intentional manual end may.
+ */
 export function completeCycleNotebook(
   progress: StudyCycleProgress,
   updatedAt = new Date().toISOString(),
 ): CycleStep {
-  const count = progress.notebookIds.length;
-  if (count === 0) {
-    return { progress: { ...progress, updatedAt }, completedPass: false, progressPercent: 0 };
+  const ids = progress.notebookIds;
+  if (ids.length === 0) {
+    return { progress: { ...progress, visitedNotebookIds: [], updatedAt }, completedPass: false, progressPercent: 0 };
   }
-  const lastNotebook = progress.currentNotebookIndex >= count - 1;
+  const currentId = ids[Math.min(Math.max(0, progress.currentNotebookIndex), ids.length - 1)];
+  const visited = new Set((progress.visitedNotebookIds ?? []).filter(id => ids.includes(id)));
+  if (currentId) visited.add(currentId);
+  const completedPass = ids.every(id => visited.has(id));
+  const nextVisited = completedPass ? [] : [...visited];
+  const currentIndex = ids.indexOf(currentId);
+  let nextIndex = 0;
+  if (!completedPass) {
+    for (let offset = 1; offset <= ids.length; offset += 1) {
+      const candidate = (currentIndex + offset) % ids.length;
+      if (!nextVisited.has(ids[candidate])) {
+        nextIndex = candidate;
+        break;
+      }
+    }
+  }
   const nextProgress: StudyCycleProgress = {
     ...progress,
-    currentNotebookIndex: lastNotebook ? 0 : progress.currentNotebookIndex + 1,
-    completedPasses: progress.completedPasses + (lastNotebook ? 1 : 0),
+    visitedNotebookIds: nextVisited,
+    currentNotebookIndex: nextIndex,
+    completedPasses: progress.completedPasses + (completedPass ? 1 : 0),
     updatedAt,
   };
   return {
     progress: nextProgress,
-    completedPass: lastNotebook,
-    nextNotebookId: nextProgress.notebookIds[nextProgress.currentNotebookIndex],
+    completedPass,
+    nextNotebookId: ids[nextIndex],
     progressPercent: getCycleProgressPercent(nextProgress),
   };
 }
