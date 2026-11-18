@@ -13,7 +13,7 @@ import {
   subjectRepository, subjectDependencyRepository, settingsRepository, flashcardRepository, flashcardReviewRepository
 } from "./storage/repositories";
 import {
-  STUDY_BLOCK_SECONDS, addStudyTime, canAdvanceToNextNotebook,
+  STUDY_BLOCK_SECONDS, canAdvanceToNextNotebook,
   getStudyBlockProgress, pauseStudyBlock, resumeStudyBlock, type StudyBlock
 } from "./domain/studyBlocks";
 import { completeCycleNotebook, getCycleProgressPercent, reconcileStudyCycle, type StudyCycleProgress } from "./domain/studyCycles";
@@ -229,7 +229,7 @@ function StudyPage({disciplines,notebooks,subjects,notebookSubjects,dependencies
  async function pause(){setRunning(false);if(!block)return;const next=pauseStudyBlock({...block,elapsedSeconds:elapsed,lastQuestionNumber:question?Math.max(0,Number(question)-1):block.lastQuestionNumber});await studyBlockRepository.save(next);setBlock(next);setMessage("Bloco pausado. O tempo e a posição foram salvos; sua sessão continua aberta.");reload();}
  async function completeBlock(){
   if(!block)return;
-  const completed=addStudyTime({...block,elapsedSeconds:elapsed,status:"in_progress",lastQuestionNumber:question?Math.max(0,Number(question)-1):block.lastQuestionNumber,updatedAt:nowIso()},Math.max(0,STUDY_BLOCK_SECONDS-elapsed));
+  const completed={...block,elapsedSeconds:STUDY_BLOCK_SECONDS,status:"completed" as const,lastQuestionNumber:question?Math.max(0,Number(question)-1):block.lastQuestionNumber,updatedAt:nowIso(),completedAt:nowIso()};
   await studyBlockRepository.save(completed);
   const currentProgress=reconcileStudyCycle(cycleProgress,disciplineId,eligibleNotebooks.map(n=>n.id));
   const step=completeCycleNotebook(currentProgress,nowIso());
