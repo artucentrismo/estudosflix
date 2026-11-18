@@ -82,3 +82,9 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--primary); outli
 .difficulty-picks{display:flex;flex-wrap:wrap;gap:7px}
 .difficulty-picks label{display:flex;align-items:center;gap:5px;font-size:9px;font-weight:500}
 .difficulty-picks input{width:13px;min-height:13px}
+
+.review-card{margin:20px 0;padding:20px;border:1px solid var(--border);border-radius:12px;background:var(--surface-2)}
+.review-card h3{font:700 18px/1.45 system-ui;color:var(--title);margin:12px 0 20px}
+.review-answer{border-top:1px solid var(--border);padding-top:15px;margin-bottom:12px}
+.review-answer p{font-size:13px;line-height:1.6;color:var(--text);white-space:pre-wrap}
+.review-panel .timer-actions{justify-content:flex-start}
