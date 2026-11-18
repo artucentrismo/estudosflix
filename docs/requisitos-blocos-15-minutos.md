@@ -1,99 +1,93 @@
-# Requisitos pedagógicos: ciclo de cadernos e blocos de 15 minutos
+# Requisitos pedagógicos — Método EstudosFlix
 
 ## Conceitos oficiais
 
-- **Caderno:** unidade operacional do estudo dentro de uma disciplina. Pode conter um ou vários assuntos.
-- **Bloco:** período de 15 minutos líquidos dedicado a um caderno.
-- **Ciclo:** sequência ordenada dos cadernos elegíveis de uma disciplina.
-- **Passada:** visita completa a todos os cadernos elegíveis do ciclo, uma vez.
-- **Sessão:** período contínuo de estudo que pode conter vários blocos e até mais de uma passada.
-- **Exposição válida:** evento de desempenho com questões; não deve ser confundido com bloco, ciclo ou passada.
+- **Disciplina:** agrupador de cadernos e unidade de alocação do tempo recomendado.
+- **Caderno:** unidade operacional e estatística primária de aprendizagem.
+- **Bloco:** até 15 minutos líquidos de estudo contínuo no mesmo caderno; ao completar 15 minutos, o sistema pode avançar automaticamente.
+- **Ciclo geral:** sequência de matérias, cada uma com tempo recomendado personalizado.
+- **Ciclo de cadernos:** sequência ordenada de cadernos ativos dentro de uma disciplina.
+- **Visita válida:** atividade encerrada intencionalmente ou bloco de 15 minutos concluído.
+- **Passada:** visita a todos os cadernos ativos de uma disciplina ao menos uma vez desde a passada anterior.
+- **Sessão:** período de estudo que pode conter mais de um bloco, caderno ou matéria.
+- **Exposição válida:** evidência de desempenho baseada em questões; não se confunde com tempo, bloco, ciclo ou passada.
 
-## RF-CICLO-001 — Ciclo como motor da experiência
+## RF-GERAL-001 — Ciclo geral por matéria
 
-O aluno navega por Disciplina → Ciclo → Próximo Caderno → Estudo. O sistema determina o próximo caderno elegível e preserva a posição atual. A ordem do ciclo é configurável na organização dos cadernos e deve permanecer estável entre sessões.
+Cada disciplina possui tempo recomendado individual, em minutos. O sistema acumula tempo líquido real na matéria atual e avança para a próxima quando o tempo recomendado daquela matéria é alcançado. Se o estudante parar antes, a posição e o tempo acumulado permanecem para a retomada. Não existe dívida por meta não cumprida.
 
-## RF-BLOCO-015 — Bloco de 15 minutos
+## RF-CICLO-001 — Ciclo de cadernos
 
-Cada caderno é estudado em blocos de 15 minutos líquidos. Ao concluir um bloco, o sistema salva o tempo e a posição e avança para o próximo caderno elegível do ciclo.
+A ordem dos cadernos define a sequência de execução. A identidade do caderno é seu ID permanente; a posição é apenas apresentação. O sistema seleciona automaticamente o próximo caderno não visitado na passada atual.
 
-Um bloco concluído **não** significa que uma passada inteira foi concluída, exceto quando o ciclo possui apenas um caderno elegível.
+## RF-BLOCO-015 — Bloco e retomada parcial
 
-## RF-CICLO-002 — Conclusão de passada
+O bloco de referência tem 15 minutos líquidos no mesmo caderno.
+- Ao completar 15 minutos, registrar bloco concluído e avançar.
+- Se houver interrupção ou pausa antes dos 15 minutos, salvar tempo, caderno e posição da questão; retomar o tempo restante no mesmo caderno.
+- Pausar não conclui visita, não avança o ciclo e não conta para a passada.
+- O estudante pode encerrar manualmente a atividade antes de 15 minutos. Nesse caso, registrar o tempo real, encerrar o bloco como antecipado e avançar para o próximo caderno. Essa visita conta para a passada, mas não deve ser contabilizada como bloco completo de 15 minutos.
 
-Uma passada só é contabilizada quando todos os cadernos elegíveis da disciplina tiverem recebido um bloco concluído naquela volta do ciclo. Ao completar o último caderno:
-1. incrementar o contador de passadas concluídas;
-2. registrar o ciclo completo;
-3. reiniciar a posição no primeiro caderno elegível para a próxima passada.
+## RF-CICLO-002 — Conclusão da passada
 
-Exemplo com quatro cadernos: 01 → 02 → 03 → 04 = uma passada completa. Estudar apenas 01, 02 e 03 representa 75% do ciclo, não uma passada concluída.
+Uma passada é concluída quando todos os cadernos ativos da disciplina foram visitados ao menos uma vez desde o início daquela passada. A duração de cada visita não é condição para a passada quando o estudante encerra manualmente a atividade.
 
-## RF-BLOCO-016 — Pausa e retomada
+Ao completar a última visita:
+1. Incrementar o contador de passadas.
+2. Registrar data inicial, data final e IDs dos cadernos percorridos.
+3. Limpar a lista de visitas da passada atual.
+4. Retornar ao primeiro caderno ativo.
 
-Se o aluno estudar 9 minutos no Caderno 03 e interromper:
-- salvar os 9 minutos e a posição/última questão;
-- manter o bloco parcial vinculado ao Caderno 03;
-- ao retornar, oferecer os 6 minutos restantes;
-- não avançar para o Caderno 04 antes de completar os 15 minutos do Caderno 03.
+Com quatro cadernos, uma sequência de visitas válidas 01 → 02 → 03 → 04 conclui a passada. O estudante não precisa fazer isso no mesmo dia.
 
-O bloco parcial não conta como bloco concluído e não avança o ciclo. A interrupção não descarta tempo nem posição.
+## RF-CICLO-003 — Reordenação e alterações
 
-## RF-CICLO-003 — Continuidade entre sessões
+- Preservar domínio, retenção, confiança, questões, passadas, histórico, flashcards e travas pelo ID permanente.
+- Reordenar altera somente a próxima sequência de execução.
+- Cadernos adicionados entram como não visitados na passada atual.
+- Cadernos removidos deixam de ser exigidos na passada atual; registros históricos permanecem.
+- Mudanças não devem apagar ou reiniciar o progresso sem ação explícita do estudante.
 
-O ciclo nunca zera automaticamente por mudança de dia, fechamento do navegador ou encerramento de sessão. O aluno continua no próximo caderno pendente. A posição da questão é retomada no ponto salvo.
+## RF-UX-001 — Separação entre configuração e visualização
 
-## RF-CICLO-004 — Cadernos elegíveis e pré-requisitos
+Abas principais:
+1. Início.
+2. Disciplinas — cadastro/edição de matérias, tempo recomendado e cadernos.
+3. Ciclo — visualização do ciclo geral e dos ciclos de cadernos, sem edição.
+4. Revisões — flashcards por caderno.
+5. Evolução — estatísticas e histórico por caderno, com consolidação por disciplina.
 
-A rotação percorre somente cadernos elegíveis. Bloqueios pedagógicos afetam os cadernos dependentes, nunca a disciplina inteira. Ausência de evidência não equivale a domínio saudável e não deve gerar bloqueio automático.
+Assuntos não são entidade principal da experiência e não devem ser exigidos para cadastrar cadernos, registrar desempenho ou criar flashcards.
 
-## RF-UX-001 — Interface centrada no aluno
+## RF-REE-001 — Revisões orientadas por erros
 
-O menu principal contém quatro áreas:
-1. Início — próximo estudo, ciclo atual e revisões do dia.
-2. Disciplinas — disciplinas e seus cadernos; assuntos são metadados internos associados aos cadernos.
-3. Revisões — flashcards do dia, fora do ciclo.
-4. Evolução — progresso, gargalos, recomendações e histórico integrado.
+Ao registrar o resultado de uma questão, as opções são:
+- Acertei com certeza.
+- Acertei no chute.
+- Acertei com dúvida.
+- Errei.
 
-Assuntos, subassuntos, pré-requisitos, fórmulas, níveis de retenção e pontuações internas não devem virar áreas principais de navegação.
+Chute, dúvida e erro podem gerar flashcard automaticamente quando o estudante preencher pergunta e resposta. Todo card é vinculado ao caderno de origem. Acerto com certeza não gera card automaticamente.
 
-## RF-UX-002 — Central de Evolução
+## RF-ESTAT-001 — Confiança e domínio
 
-Histórico, relatórios e diagnósticos são unificados em uma única área chamada Evolução. Ela deve responder:
-- Como estou indo?
-- Onde estou errando?
-- O que devo fazer agora?
+Confiança:
+- <20 questões: insuficiente.
+- 20–49: baixa.
+- 50–99: média.
+- ≥100: alta.
 
-## RF-UX-003 — Próxima ação
+Limites máximos do domínio exibido:
+- <20 questões: 70%.
+- 20–49 questões: 85%.
+- ≥50 questões: 100%.
 
-O painel inicial deve responder em poucos segundos qual disciplina, passada e caderno vêm a seguir, com tempo previsto de 15 minutos e uma ação clara para iniciar ou retomar.
+Domínio, retenção, tendência, travas e indicadores de flashcards são calculados no nível do caderno. A disciplina consolida domínio por média ponderada pelo número de questões respondidas. Não classificar domínio com evidência insuficiente.
 
-## Métricas sem confusão
+## RF-TESTE-001 — Isolamento de testes
 
-- Blocos concluídos: quantidade de cadernos que receberam 15 minutos líquidos.
-- Passadas concluídas: voltas completas em todos os cadernos elegíveis de uma disciplina.
-- Progresso do ciclo: proporção de cadernos concluídos na volta atual.
-- Tempo líquido: tempo efetivamente investido em estudo.
-- Questões/acertos/erros: indicadores complementares de desempenho.
-- Exposições válidas: unidade usada nos cálculos estatísticos que dependem de evidência.
+Testes acelerados não podem contaminar estatísticas reais. O modo de desenvolvedor deve usar relógio acelerado apenas em ambiente explicitamente identificado como teste e nunca misturar registros de teste com o histórico real.
 
-Passadas nunca substituem exposições válidas nas fórmulas de domínio, consistência ou retenção.
+## Princípio inegociável
 
-## Persistência
-
-O sistema deve persistir:
-- bloco atual, tempo acumulado, estado e posição/última questão;
-- ordem dos cadernos por disciplina;
-- posição atual do ciclo;
-- contador de passadas completas;
-- data da última atualização;
-- progresso do ciclo e bloco parcial dentro do backup/exportação.
-
-## Testes essenciais
-
-- 9 + 6 minutos completam um bloco, sem perder posição.
-- Um bloco de 15 minutos não completa uma passada quando há mais de um caderno elegível.
-- Com quatro cadernos, o quarto bloco concluído fecha a primeira passada.
-- A próxima passada começa no primeiro caderno elegível.
-- Reordenar cadernos mantém a posição atual sempre que possível.
-- Remover ou bloquear um caderno reconcilia o ciclo sem apagar o histórico.
-- Fechar e reabrir o navegador preserva o bloco e a posição do ciclo.
+O sistema nunca deve gerar sensação de atraso. O estudante não perde o cronograma: continua do ponto em que parou.
