@@ -107,7 +107,7 @@ function Header({eyebrow,title,subtitle}:{eyebrow:string;title:string;subtitle:s
 }
 function Dashboard({disciplines,notebooks,sessions,blocks,flashcards,reviewLimit,onGo}:{disciplines:Row[];notebooks:Row[];sessions:Session[];blocks:StudyBlock[];flashcards:Flashcard[];reviewLimit:number;onGo:(s:Section)=>void}){
  const total=sessions.reduce((a,s)=>a+s.durationSeconds,0);
- const passes=sessions.reduce((a,s)=>a+Math.floor(s.durationSeconds/STUDY_BLOCK_SECONDS),0);
+ const passes=blocks.filter(b=>b.status==="completed").length;
  const activeBlock=blocks.find(b=>b.status==="paused"||b.status==="in_progress");
  const dueCards=selectDailyReviewQueue(flashcards,new Date(),reviewLimit).length;
  const activeNotebook=activeBlock?notebooks.find(n=>n.id===activeBlock.notebookId):undefined;
