@@ -12,6 +12,7 @@ describe("study cycles", () => {
     expect(last.completedPass).toBe(true);
     expect(last.progress.completedPasses).toBe(1);
     expect(last.progress.visitedNotebookIds).toEqual([]);
+    expect(last.progress.completedPassHistory?.[0].notebookIds).toEqual(["a","b","c","d"]);
     expect(last.nextNotebookId).toBe("a");
     expect(getCycleProgressPercent(last.progress)).toBe(0);
   });
@@ -37,7 +38,7 @@ describe("study cycles", () => {
     expect(last.completedPass).toBe(true);
   });
 
-  it("starts a new pass after the final eligible notebook", () => {
+  it("migrates an older index-only cycle into stable visited notebook IDs", () => {\n    const legacy = { disciplineId: "law", notebookIds: ["a", "b", "c"], currentNotebookIndex: 2, completedPasses: 1, updatedAt: "2026-11-18T10:00:00.000Z" };\n    const next = reconcileStudyCycle(legacy, "law", ["a", "b", "c"]);\n    expect(next.visitedNotebookIds).toEqual(["a", "b"]);\n  });\n\n  it("starts a new pass after the final eligible notebook", () => {
     let progress = createStudyCycleProgress("law", ["a"]);
     const step = completeCycleNotebook(progress);
     expect(step.completedPass).toBe(true);
