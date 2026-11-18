@@ -9,7 +9,7 @@ import {
   Target, TrendingUp, Upload, Download, Play, Pause, RotateCcw, Trash2, TriangleAlert
 } from "lucide-react";
 import {
-  disciplineRepository, notebookRepository, studyPlanRepository, studyPlanItemRepository, sessionRepository, sessionSegmentRepository, studyBlockRepository,
+  disciplineRepository, notebookRepository, notebookSubjectRepository, studyPlanRepository, studyPlanItemRepository, sessionRepository, sessionSegmentRepository, studyBlockRepository,
   subjectRepository, subjectDependencyRepository, settingsRepository, flashcardRepository, flashcardReviewRepository
 } from "./storage/repositories";
 import {
@@ -24,6 +24,7 @@ type StudySessionDraft = { disciplineId:string; sessionElapsed:number; segments:
 type SegmentDraft = { key:string; subjectId:string; questions:string; correct:string; difficulties:string[] };
 type SegmentRecord = { id:string; createdAt:string; updatedAt:string; sessionId:string; subjectId:string; questions:number; correct:number; difficulties:string[]; date:string };
 type DependencyRecord = { id:string; createdAt:string; updatedAt:string; prerequisiteSubjectId:string; dependentSubjectId:string; strength:"critical"|"strong"|"moderate"|"weak" };
+type NotebookSubjectRecord = { id:string; createdAt:string; updatedAt:string; notebookId:string; subjectId:string };
 type PlanRecord = { id:string; createdAt:string; updatedAt:string; name:string };
 type PlanItemRecord = { id:string; createdAt:string; updatedAt:string; planId:string; disciplineId:string; minutes:number; blockCount:number };
 
@@ -42,6 +43,7 @@ export default function App(){
   const [dark,setDark]=useState(false);
   const [disciplines,setDisciplines]=useState<Row[]>([]);
   const [notebooks,setNotebooks]=useState<Row[]>([]);
+  const [notebookSubjects,setNotebookSubjects]=useState<NotebookSubjectRecord[]>([]);
   const [subjects,setSubjects]=useState<Row[]>([]);
   const [sessions,setSessions]=useState<Session[]>([]);
   const [blocks,setBlocks]=useState<StudyBlock[]>([]);
@@ -59,11 +61,11 @@ export default function App(){
   const reload=useCallback(async()=>{
     if(!loadedRef.current)setLoading(true); setError("");
     try{
-      const [d,n,s,h,b,fc,sg,dp,pl,pi,theme,limit]=await Promise.all([
+      const [d,n,s,h,b,fc,sg,dp,pl,pi,ns,theme,limit]=await Promise.all([
         disciplineRepository.list(),notebookRepository.list(),subjectRepository.list(),
-        sessionRepository.list(),studyBlockRepository.list(),flashcardRepository.list(),sessionSegmentRepository.list(),subjectDependencyRepository.list(),studyPlanRepository.list(),studyPlanItemRepository.list(),settingsRepository.get("theme") as Promise<string | undefined>,settingsRepository.get("reviewLimit") as Promise<number | undefined>
+        sessionRepository.list(),studyBlockRepository.list(),flashcardRepository.list(),sessionSegmentRepository.list(),subjectDependencyRepository.list(),studyPlanRepository.list(),studyPlanItemRepository.list(),notebookSubjectRepository.list(),settingsRepository.get("theme") as Promise<string | undefined>,settingsRepository.get("reviewLimit") as Promise<number | undefined>
       ]);
-      setDisciplines(d as Row[]); setNotebooks(n as Row[]); setSubjects(s as Row[]);
+      setDisciplines(d as Row[]); setNotebooks(n as Row[]); setNotebookSubjects(ns as NotebookSubjectRecord[]); setSubjects(s as Row[]);
       setSessions(h as Session[]); setBlocks(b); setFlashcards(fc as Flashcard[]); setSessionSegments(sg as SegmentRecord[]); setDependencies(dp as DependencyRecord[]); setPlans(pl as PlanRecord[]); setPlanItems(pi as PlanItemRecord[]); setReviewLimit([20,30,50].includes(Number(limit))?Number(limit):30); setDark(theme==="dark");
     }catch(e){setError(e instanceof Error?e.message:"Não foi possível carregar os dados locais.");}
     finally{loadedRef.current=true;setLoading(false);}
@@ -91,7 +93,7 @@ export default function App(){
         {!loading&&section==="Disciplinas"&&<DisciplinePage disciplines={disciplines} reload={()=>setRefresh(x=>x+1)}/>}
         {!loading&&section==="Assuntos"&&<SubjectPage disciplines={disciplines} subjects={subjects} reload={()=>setRefresh(x=>x+1)}/>}
         {!loading&&section==="Assuntos"&&<SubjectPage disciplines={disciplines} subjects={subjects} reload={()=>setRefresh(x=>x+1)}/>}
-        {!loading&&section==="Cadernos"&&<NotebookPage disciplines={disciplines} notebooks={notebooks} reload={()=>setRefresh(x=>x+1)}/>}
+        {!loading&&section==="Cadernos"&&<NotebookPage disciplines={disciplines} subjects={subjects} notebooks={notebooks} mappings={notebookSubjects} reload={()=>setRefresh(x=>x+1)}/>}
         {!loading&&section==="Flashcards"&&<FlashcardsPage disciplines={disciplines} subjects={subjects} cards={flashcards} limit={reviewLimit} reload={()=>setRefresh(x=>x+1)}/>}
         {!loading&&section==="Histórico"&&<HistoryPage sessions={sessions} disciplines={disciplines} notebooks={notebooks}/>}
         {!loading&&section==="Pré-requisitos"&&<DependenciesPage subjects={subjects} dependencies={dependencies} reload={()=>setRefresh(x=>x+1)}/>}
@@ -288,20 +290,20 @@ function HistoryPage({sessions,disciplines,notebooks}:{sessions:Session[];discip
 }
 function SettingsPage({dark,setDark,reviewLimit,setReviewLimit,reload}:{dark:boolean;setDark:(v:boolean)=>void;reviewLimit:number;setReviewLimit:(n:number)=>void;reload:()=>void}){
  const [message,setMessage]=useState("");
- async function exportData(){const [disciplines,notebooks,subjects,dependencies,plans,planItems,sessions,sessionSegments,blocks,flashcards,flashcardReviews,theme,reviewLimit,activeStudySession]=await Promise.all([disciplineRepository.list(),notebookRepository.list(),subjectRepository.list(),subjectDependencyRepository.list(),studyPlanRepository.list(),studyPlanItemRepository.list(),sessionRepository.list(),sessionSegmentRepository.list(),studyBlockRepository.list(),flashcardRepository.list(),flashcardReviewRepository.list(),settingsRepository.get("theme"),settingsRepository.get("reviewLimit"),settingsRepository.get("activeStudySession")]);const stamp=nowIso();const settings=[{key:"theme",value:theme??"light",updatedAt:stamp},{key:"reviewLimit",value:reviewLimit??30,updatedAt:stamp},...(activeStudySession?[{key:"activeStudySession",value:activeStudySession,updatedAt:stamp}]:[])];const payload={format:"estudosflix-backup",version:4,exportedAt:stamp,data:{disciplines,notebooks,subjects,dependencies,plans,planItems,sessions,sessionSegments,blocks,flashcards,flashcardReviews,settings}};const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="backup-estudosflix-"+new Date().toISOString().slice(0,10)+".json";a.click();URL.revokeObjectURL(url);setMessage("Backup exportado.");}
+ async function exportData(){const [disciplines,notebooks,subjects,notebookSubjects,dependencies,plans,planItems,sessions,sessionSegments,blocks,flashcards,flashcardReviews,theme,reviewLimit,activeStudySession]=await Promise.all([disciplineRepository.list(),notebookRepository.list(),subjectRepository.list(),notebookSubjectRepository.list(),subjectDependencyRepository.list(),studyPlanRepository.list(),studyPlanItemRepository.list(),sessionRepository.list(),sessionSegmentRepository.list(),studyBlockRepository.list(),flashcardRepository.list(),flashcardReviewRepository.list(),settingsRepository.get("theme"),settingsRepository.get("reviewLimit"),settingsRepository.get("activeStudySession")]);const stamp=nowIso();const settings=[{key:"theme",value:theme??"light",updatedAt:stamp},{key:"reviewLimit",value:reviewLimit??30,updatedAt:stamp},...(activeStudySession?[{key:"activeStudySession",value:activeStudySession,updatedAt:stamp}]:[])];const payload={format:"estudosflix-backup",version:4,exportedAt:stamp,data:{disciplines,notebooks,subjects,notebookSubjects,dependencies,plans,planItems,sessions,sessionSegments,blocks,flashcards,flashcardReviews,settings}};const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="backup-estudosflix-"+new Date().toISOString().slice(0,10)+".json";a.click();URL.revokeObjectURL(url);setMessage("Backup exportado.");}
  async function importData(file?:File){
   if(!file)return;
   try{
    const payload=JSON.parse(await file.text()) as {format?:string;version?:number;data?:Record<string,unknown>};
    if(payload.format!=="estudosflix-backup"||![2,3,4].includes(payload.version??0)||!payload.data)throw new Error("Arquivo de backup inválido ou versão não compatível.");
-   const keys=["disciplines","notebooks","subjects","dependencies","plans","planItems","sessions","sessionSegments","blocks","flashcards","flashcardReviews","settings"];
-   const storeMap:Record<string,string>={disciplines:"disciplines",notebooks:"notebooks",subjects:"subjects",dependencies:"subjectDependencies",plans:"studyPlans",planItems:"studyPlanItems",sessions:"sessions",sessionSegments:"sessionSegments",blocks:"studyBlocks",flashcards:"flashcards",flashcardReviews:"flashcardReviews",settings:"settings"};
+   const keys=["disciplines","notebooks","subjects","notebookSubjects","dependencies","plans","planItems","sessions","sessionSegments","blocks","flashcards","flashcardReviews","settings"];
+   const storeMap:Record<string,string>={disciplines:"disciplines",notebooks:"notebooks",subjects:"subjects",notebookSubjects:"notebookSubjects",dependencies:"subjectDependencies",plans:"studyPlans",planItems:"studyPlanItems",sessions:"sessions",sessionSegments:"sessionSegments",blocks:"studyBlocks",flashcards:"flashcards",flashcardReviews:"flashcardReviews",settings:"settings"};
    const normalized:Record<string,unknown[]>={};let count=0;
    for(const key of keys){const rows=payload.data[key]??[];if(!Array.isArray(rows))throw new Error("O backup contém uma lista inválida: "+key+".");for(const row of rows){if(!row||typeof row!=="object")throw new Error("Registro inválido no grupo "+key+".");const record=row as {id?:unknown;key?:unknown;createdAt?:unknown;updatedAt?:unknown};if(key==="settings"?typeof record.key!=="string"||typeof record.updatedAt!=="string":typeof record.id!=="string"||typeof record.createdAt!=="string"||typeof record.updatedAt!=="string")throw new Error("Registro inválido no grupo "+key+".");}normalized[storeMap[key]]=rows;count+=rows.length;}
    if(count===0)throw new Error("O backup não contém registros para importar.");
    const hasRef=(key:string,id:unknown)=>typeof id==="string"&&Boolean(normalized[storeMap[key]]?.some(row=>(row as {id?:string}).id===id));
    const checkRefs=(key:string,field:string,target:string)=>{for(const row of normalized[storeMap[key]]??[]){const id=(row as Record<string,unknown>)[field];if(id!==undefined&&id!==null&&!hasRef(target,id))throw new Error("Referência inválida em "+key+": "+field+".");}};
-   checkRefs("notebooks","disciplineId","disciplines");checkRefs("subjects","disciplineId","disciplines");
+   checkRefs("notebooks","disciplineId","disciplines");checkRefs("subjects","disciplineId","disciplines");checkRefs("notebookSubjects","notebookId","notebooks");checkRefs("notebookSubjects","subjectId","subjects");
    checkRefs("dependencies","prerequisiteSubjectId","subjects");checkRefs("dependencies","dependentSubjectId","subjects");
    checkRefs("planItems","planId","plans");checkRefs("planItems","disciplineId","disciplines");
    checkRefs("sessions","disciplineId","disciplines");checkRefs("sessions","notebookId","notebooks");
