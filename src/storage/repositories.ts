@@ -55,6 +55,7 @@ export const disciplineRepository = createRepository("disciplines");
 export const subjectRepository = createRepository("subjects");
 export const subjectDependencyRepository = createRepository("subjectDependencies");
 export const notebookRepository = createRepository("notebooks");
+export const notebookSubjectRepository = createRepository("notebookSubjects");
 export const studyPlanRepository = createRepository("studyPlans");
 export const studyPlanItemRepository = createRepository("studyPlanItems");
 export const sessionRepository = createRepository("sessions");
