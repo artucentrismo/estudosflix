@@ -4,7 +4,7 @@ import { reviewFlashcard, selectDailyReviewQueue, type Flashcard } from "./domai
 import { calculateDomain, calculateRetention, type Attempt, type Exposure } from "./domain/metrics";
 import { importRecordsAtomically, type DatabaseImportData } from "./storage/database";
 import {
-  Activity, ArrowRight, BookOpen, Brain, CalendarDays, Check, Clock3,
+  Activity, ArrowRight, BookOpen, Brain, CalendarDays, Check, Clock3, Compass,
   GraduationCap, LayoutDashboard, Library, Moon, Plus, Settings2, Sun,
   Target, TrendingUp, Upload, Download, Play, Pause, RotateCcw, Trash2, TriangleAlert
 } from "lucide-react";
