@@ -2,7 +2,7 @@ name: Validar EstudosFlix
 
 on:
   push:
-    branches: [foundation/mvp-offline]
+    branches: [foundation/mvp-offline, 'feature/**']
   pull_request:
     branches: [main]
 
