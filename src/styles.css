@@ -88,3 +88,12 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--primary); outli
 .review-answer{border-top:1px solid var(--border);padding-top:15px;margin-bottom:12px}
 .review-answer p{font-size:13px;line-height:1.6;color:var(--text);white-space:pre-wrap}
 .review-panel .timer-actions{justify-content:flex-start}
+
+.analysis-row{display:flex;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid var(--border)}
+.analysis-main{flex:1;min-width:130px}
+.analysis-main strong,.analysis-main small,.analysis-value small{display:block}
+.analysis-main strong{font-size:11px;color:var(--title)}
+.analysis-main small,.analysis-value small{font-size:9px;color:var(--muted);margin-top:4px}
+.analysis-value{text-align:right;min-width:52px}
+.analysis-value b{font:700 13px system-ui;color:var(--title)}
+@media(max-width:760px){.analysis-row{align-items:flex-start;flex-wrap:wrap}.analysis-main{flex-basis:100%}.analysis-row .status-label{margin-left:auto}}
