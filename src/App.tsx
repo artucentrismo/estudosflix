@@ -192,7 +192,8 @@ function StudyPage({disciplines,notebooks,subjects,notebookSubjects,dependencies
  const [question,setQuestion]=useState(paused?.lastQuestionNumber?String(paused.lastQuestionNumber+1):"");
  const [segments,setSegments]=useState<SegmentDraft[]>([{key:makeId(),subjectId:"",questions:"0",correct:"0",difficulties:[]}]);
  const [block,setBlock]=useState<StudyBlock|undefined>(paused?{...paused,status:"paused"}:undefined);
- const [cycleProgress,setCycleProgress]=useState<StudyCycleProgress>();\n const [cycleReady,setCycleReady]=useState(false);
+ const [cycleProgress,setCycleProgress]=useState<StudyCycleProgress>();
+ const [cycleReady,setCycleReady]=useState(false);
  useEffect(()=>{if(paused?.status==="in_progress"){void studyBlockRepository.save({...paused,status:"paused",updatedAt:nowIso()});}},[]);
  useEffect(()=>{let alive=true;void settingsRepository.get("activeStudySession").then(value=>{if(!alive||!value||typeof value!=="object")return;const draft=value as StudySessionDraft;setDisciplineId(draft.disciplineId||disciplineId);setSessionElapsed(Number(draft.sessionElapsed)||0);if(Array.isArray(draft.segments))setSegments(draft.segments);if(Array.isArray(draft.visitedNotebookIds))setVisitedNotebookIds(draft.visitedNotebookIds);if(draft.startedAt)setSessionStartedAt(draft.startedAt);});return()=>{alive=false;};},[]);
  useEffect(()=>{sessionDraftRef.current=sessionElapsed>0?{disciplineId,sessionElapsed,segments,visitedNotebookIds,startedAt:sessionStartedAt??nowIso()}:null;},[disciplineId,sessionElapsed,segments,visitedNotebookIds,sessionStartedAt]);
@@ -223,7 +224,8 @@ function StudyPage({disciplines,notebooks,subjects,notebookSubjects,dependencies
  const linkedSubjects=subjects.filter(s=>s.disciplineId===disciplineId&&(!mappedSubjectIds.length||mappedSubjectIds.includes(s.id)));
  const notebookHistory=blocks.filter(b=>b.notebookId===notebookId).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))[0];
  useEffect(()=>{if(!block){setQuestion(notebookHistory?.lastQuestionNumber!==undefined?String(notebookHistory.lastQuestionNumber+1):"");}},[notebookId,blocks,block?.id]);
- useEffect(()=>{if(!notebookId&&available[0])setNotebookId(available[0].id);},[available,notebookId]);\n useEffect(()=>{if(!block&&cycleProgress?.notebookIds.length){const currentId=cycleProgress.notebookIds[cycleProgress.currentNotebookIndex];if(currentId)setNotebookId(currentId);}},[cycleProgress,block?.id]);
+ useEffect(()=>{if(!notebookId&&available[0])setNotebookId(available[0].id);},[available,notebookId]);
+ useEffect(()=>{if(!block&&cycleProgress?.notebookIds.length){const currentId=cycleProgress.notebookIds[cycleProgress.currentNotebookIndex];if(currentId)setNotebookId(currentId);}},[cycleProgress,block?.id]);
  useEffect(()=>{if(!running)return;const timer=window.setInterval(()=>{setElapsed(v=>Math.min(STUDY_BLOCK_SECONDS,v+1));setSessionElapsed(v=>v+1);},1000);return()=>window.clearInterval(timer);},[running]);
  useEffect(()=>{if(block&&running){const timer=window.setInterval(()=>{const next={...block,elapsedSeconds:elapsedRef.current,updatedAt:nowIso(),lastQuestionNumber:question?Math.max(0,Number(question)-1):block.lastQuestionNumber};void studyBlockRepository.save(next);},5000);return()=>window.clearInterval(timer);}},[block,running,question]);
  useEffect(()=>{if(elapsed>=STUDY_BLOCK_SECONDS&&running){setRunning(false);void completeBlock();}},[elapsed,running]);
