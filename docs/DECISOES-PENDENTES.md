@@ -1,45 +1,40 @@
-# EstudosFlix — Registro de decisões e limitações
+# EstudosFlix — Registro de decisões e validações
 
-## Aprovado pela equipe
+## Decisões oficiais do produto
 
-- WebApp responsivo acessível por navegador em computadores, iPads e celulares.
-- PWA instalável opcionalmente; abrir pelo link não exige instalação.
-- IndexedDB local em todos os dispositivos.
-- Sem IA, APIs, nuvem, contas online, sincronização ou banco de questões.
-- Sessão única com vários segmentos por assunto.
-- Domínio baseado em desempenho atual, consistência e experiência, com teto implícito no desempenho atual.
-- Retenção por exposições sucessivas.
-- Trava apenas com evidência persistente.
-- Bloqueio localizado aos dependentes.
-- Flashcards via catálogo pedagógico e cadastro manual.
-- Arquivamento após cinco acertos consecutivos e média inferior a cinco segundos.
-- Reativação por novo erro associado ao conceito.
-- Revisões limitadas e redistribuídas.
-- UX progressiva e recomendação explicável.
+- Nome público do método: **Método EstudosFlix**.
+- Criado por **Artucentrismo**.
+- Hierarquia principal: Disciplina → Cadernos → Flashcards.
+- Caderno é a unidade primária de aprendizagem e estatística.
+- Disciplina agrupa cadernos e define tempo recomendado personalizado.
+- Ciclo não é entidade de cadastro: é visualização do ciclo geral e dos ciclos de cadernos.
+- Navegação: Início, Disciplinas, Ciclo, Revisões e Evolução.
+- O ciclo geral é organizado em blocos por matéria, com tempo personalizado por disciplina.
+- O planejamento não gera atraso, dívida ou punição.
+- Bloco de referência: 15 minutos líquidos; pausa parcial preserva tempo e posição.
+- Encerramento manual antecipado registra tempo real e visita, mas não é bloco completo de 15 minutos.
+- Passada completa quando todos os cadernos ativos da disciplina foram visitados ao menos uma vez.
+- IDs permanentes de cadernos preservam estatísticas em reordenação.
+- Flashcards são vinculados ao caderno e podem nascer de erro, chute ou dúvida.
+- Assuntos legados podem permanecer no banco para compatibilidade, mas não na experiência principal.
+- Ambiente de desenvolvimento usa sandbox IndexedDB e timer acelerado; não mistura dados reais.
 
-## Decisões técnicas adotadas para o MVP
+## Decisões estatísticas
 
-1. O segmento por assunto registra quantidade de questões e acertos reais; percentuais aproximados não serão usados para cálculo estatístico.
-2. O domínio não pode superar o desempenho atual suavizado.
-3. Retenção é proporção preservada entre exposições, não diferença aditiva.
-4. Se o desempenho anterior for zero, não há percentual de retenção válido; mostrar evolução em pontos percentuais.
-5. Confiança é exibida separadamente do indicador.
-6. Dados insuficientes nunca equivalem a ausência de dificuldade.
-7. A fila de revisão redistribui vagas críticas não utilizadas para moderadas e depois leves.
-8. O índice de confiabilidade global proposto não será usado como bloqueio universal no MVP, pois misturaria sinais diferentes e poderia ocultar a causa da incerteza. Cada decisão usa sua própria confiança.
+- Domínio, retenção, confiança, tendência, dificuldades e flashcards são calculados por caderno.
+- Disciplina consolida resultados por média ponderada pelo número de questões respondidas.
+- Confiança: <20 insuficiente; 20–49 baixa; 50–99 média; ≥100 alta.
+- Teto de domínio: 70% com <20 questões; 85% entre 20 e 49; até 100% com ≥50.
+- Ausência de evidência não equivale a domínio.
+- Índice de dificuldade de flashcards = cards ativos / questões × 100.
+- Taxa de resolução = cards já arquivados / cards criados × 100.
+- Taxa de reativação = reativações / cards já arquivados × 100.
 
-## Pontos para validação empírica futura
+## Validações empíricas futuras
 
-- Calibrar prior 5/5 e janela de 50 questões com dados reais.
-- Avaliar se 30 questões e duas exposições são limiares adequados para trava.
-- Validar o peso das dependências com avaliação pedagógica.
-- Avaliar se as faixas de confiança de retenção precisam ser ajustadas.
-- Revisar o limite diário de flashcards com dados de adesão.
-- Validar se a fórmula de consistência (1 - DP/50) é adequada para exposições muito heterogêneas.
-
-Os limiares são regras iniciais versionadas, não verdades universais. Não devem ser alterados sem registrar a justificativa e atualizar os testes.
-
-
-## Decisão de produto: WebApp universal
-
-A experiência principal será uma única aplicação web responsiva. Não será mantida uma versão desktop nativa separada no MVP. A instalação PWA é opcional e serve apenas para facilitar o acesso; o endereço web continua sendo a porta principal de entrada. Cada navegador/dispositivo armazena seus próprios dados localmente no IndexedDB. A transferência entre aparelhos será feita por backup/importação manual.
+- Calibrar suavização do domínio e tetos com dados reais.
+- Validar limiares de confiança e retenção com amostras maiores.
+- Avaliar se as faixas do índice de dificuldade dos flashcards predizem gargalos.
+- Testar a experiência de continuidade em Safari/iPadOS e dispositivos físicos.
+- Revisar recomendações e gargalos após coleta de uso real.
+- Confirmar que backup/importação mantém integridade de IDs e histórico após reordenação, arquivamento e exclusão.
