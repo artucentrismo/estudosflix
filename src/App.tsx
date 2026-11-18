@@ -60,7 +60,7 @@ export default function App(){
     finally{loadedRef.current=true;setLoading(false);}
   },[]);
   useEffect(()=>{void reload();},[reload,refresh]);
-  useEffect(()=>{document.documentElement.dataset.theme=dark?"dark":"light";void settingsRepository.set("theme",dark?"dark":"light").catch(()=>{});},[dark]);
+  useEffect(()=>{document.documentElement.dataset.theme=dark?"dark":"light";if(loadedRef.current)void settingsRepository.set("theme",dark?"dark":"light").catch(()=>{});},[dark]);
 
   const activeBlock=blocks.find(b=>b.status==="in_progress"||b.status==="paused");
   const title=section;
