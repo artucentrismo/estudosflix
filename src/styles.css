@@ -97,3 +97,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--primary); outli
 .analysis-value{text-align:right;min-width:52px}
 .analysis-value b{font:700 13px system-ui;color:var(--title)}
 @media(max-width:760px){.analysis-row{align-items:flex-start;flex-wrap:wrap}.analysis-main{flex-basis:100%}.analysis-row .status-label{margin-left:auto}}
+
+.compact-select{max-width:150px;min-height:32px;border:1px solid var(--border);border-radius:7px;padding:5px 8px;background:var(--surface);color:var(--text);font:11px system-ui}
+.plan-metrics{grid-template-columns:1fr 1fr;margin:18px 0}
+.plan-metrics .metric-card{min-height:110px}
