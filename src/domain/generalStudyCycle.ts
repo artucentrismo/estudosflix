@@ -32,7 +32,7 @@ export function recordGeneralStudyTime(
 ): GeneralStudyCycleProgress {
   if (!progress.disciplineIds.length || !progress.disciplineIds.includes(disciplineId) || seconds <= 0) return { ...progress, updatedAt };
   const elapsed = { ...progress.elapsedSecondsByDiscipline, [disciplineId]: Math.max(0, progress.elapsedSecondsByDiscipline[disciplineId] ?? 0) + Math.floor(seconds) };
-  const targetMinutes = Math.max(15, recommendedMinutesByDiscipline[disciplineId] || 60);
+  const targetMinutes = Math.max(1, recommendedMinutesByDiscipline[disciplineId] || 60);
   if (elapsed[disciplineId] < targetMinutes * 60) return { ...progress, currentDisciplineId: disciplineId, elapsedSecondsByDiscipline: elapsed, updatedAt };
   const index = progress.disciplineIds.indexOf(disciplineId);
   const last = index === progress.disciplineIds.length - 1;
