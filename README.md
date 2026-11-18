@@ -20,7 +20,7 @@ O EstudosFlix é um aplicativo desktop, local e offline que transforma registros
 Tauri 2 + React + TypeScript + Rust + SQLite.
 
 ## Estado do projeto
-Fundação documental criada. Próximo marco: esqueleto desktop e primeira versão navegável; depois, persistência SQLite e motores pedagógicos testados.
+Fundação documental e esqueleto desktop criados. Inclui Tauri 2, React, TypeScript, SQLite local, migração inicial, painel navegável demonstrativo e primeiros cálculos estatísticos com testes unitários. O CRUD completo, os fluxos pedagógicos e a validação de build ainda estão em desenvolvimento.
 
 ## Privacidade
 Os dados de estudo ficam no dispositivo do usuário. O GitHub armazena apenas o código-fonte e a documentação do projeto.
