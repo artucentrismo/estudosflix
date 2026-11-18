@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import { reviewFlashcard, selectDailyReviewQueue, type Flashcard } from "./domain/flashcards";
+import { calculateDomain, calculateRetention, type Attempt, type Exposure } from "./domain/metrics";
 import {
   Activity, ArrowRight, BookOpen, Brain, CalendarDays, Check, Clock3,
   GraduationCap, LayoutDashboard, Library, Moon, Plus, Settings2, Sun,
@@ -15,15 +16,16 @@ import {
   getStudyBlockProgress, pauseStudyBlock, resumeStudyBlock, type StudyBlock
 } from "./domain/studyBlocks";
 
-type Section = "Painel" | "Estudar" | "Disciplinas" | "Assuntos" | "Cadernos" | "Flashcards" | "Histórico" | "Configurações";
+type Section = "Painel" | "Estudar" | "Disciplinas" | "Assuntos" | "Cadernos" | "Flashcards" | "Histórico" | "Diagnóstico" | "Relatórios" | "Configurações";
 type Row = { id:string; name:string; createdAt:string; updatedAt:string; disciplineId?:string; description?:string; parentId?:string };
 type Session = { id:string; createdAt:string; updatedAt:string; disciplineId:string; notebookId:string; durationSeconds:number; questions:number; correct:number; date:string };
 type SegmentDraft = { key:string; subjectId:string; questions:string; correct:string; difficulties:string[] };
+type SegmentRecord = { id:string; createdAt:string; updatedAt:string; sessionId:string; subjectId:string; questions:number; correct:number; difficulties:string[]; date:string };
 
 const sections: {name:Section; icon:typeof LayoutDashboard}[] = [
   {name:"Painel",icon:LayoutDashboard},{name:"Estudar",icon:BookOpen},
   {name:"Disciplinas",icon:GraduationCap},{name:"Assuntos",icon:Target},{name:"Cadernos",icon:Library},{name:"Flashcards",icon:Brain},
-  {name:"Histórico",icon:TrendingUp},{name:"Configurações",icon:Settings2}
+  {name:"Histórico",icon:TrendingUp},{name:"Diagnóstico",icon:Activity},{name:"Relatórios",icon:TrendingUp},{name:"Configurações",icon:Settings2}
 ];
 
 const nowIso=()=>new Date().toISOString();
@@ -39,6 +41,7 @@ export default function App(){
   const [sessions,setSessions]=useState<Session[]>([]);
   const [blocks,setBlocks]=useState<StudyBlock[]>([]);
   const [flashcards,setFlashcards]=useState<Flashcard[]>([]);
+  const [sessionSegments,setSessionSegments]=useState<SegmentRecord[]>([]);
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState("");
   const [refresh,setRefresh]=useState(0);
@@ -47,12 +50,12 @@ export default function App(){
   const reload=useCallback(async()=>{
     if(!loadedRef.current)setLoading(true); setError("");
     try{
-      const [d,n,s,h,b,fc,theme]=await Promise.all([
+      const [d,n,s,h,b,fc,sg,theme]=await Promise.all([
         disciplineRepository.list(),notebookRepository.list(),subjectRepository.list(),
-        sessionRepository.list(),studyBlockRepository.list(),flashcardRepository.list(),settingsRepository.get("theme") as Promise<string | undefined>
+        sessionRepository.list(),studyBlockRepository.list(),flashcardRepository.list(),sessionSegmentRepository.list(),settingsRepository.get("theme") as Promise<string | undefined>
       ]);
       setDisciplines(d as Row[]); setNotebooks(n as Row[]); setSubjects(s as Row[]);
-      setSessions(h as Session[]); setBlocks(b); setFlashcards(fc as Flashcard[]); setDark(theme==="dark");
+      setSessions(h as Session[]); setBlocks(b); setFlashcards(fc as Flashcard[]); setSessionSegments(sg as SegmentRecord[]); setDark(theme==="dark");
     }catch(e){setError(e instanceof Error?e.message:"Não foi possível carregar os dados locais.");}
     finally{loadedRef.current=true;setLoading(false);}
   },[]);
@@ -81,6 +84,8 @@ export default function App(){
         {!loading&&section==="Cadernos"&&<NotebookPage disciplines={disciplines} notebooks={notebooks} reload={()=>setRefresh(x=>x+1)}/>}
         {!loading&&section==="Flashcards"&&<FlashcardsPage disciplines={disciplines} subjects={subjects} cards={flashcards} reload={()=>setRefresh(x=>x+1)}/>}
         {!loading&&section==="Histórico"&&<HistoryPage sessions={sessions} disciplines={disciplines} notebooks={notebooks}/>}
+        {!loading&&section==="Diagnóstico"&&<AnalysisPage subjects={subjects} segments={sessionSegments} mode="diagnosis"/>}
+        {!loading&&section==="Relatórios"&&<AnalysisPage subjects={subjects} segments={sessionSegments} mode="reports"/>}
         {!loading&&section==="Configurações"&&<SettingsPage dark={dark} setDark={setDark} reload={()=>setRefresh(x=>x+1)}/>}
       </div>
     </main>
@@ -188,6 +193,23 @@ function StudyPage({disciplines,notebooks,subjects,blocks,reload}:{disciplines:R
  </div>
  <div className="panel form-panel"><h2>Configurar estudo</h2><label>Disciplina<select value={disciplineId} onChange={e=>{setDisciplineId(e.target.value);setNotebookId("");}} disabled={!!block&&elapsed>0}><option value="">Selecione</option>{disciplines.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></label><label>Caderno<select value={notebookId} onChange={e=>setNotebookId(e.target.value)} disabled={!!block&&elapsed>0}><option value="">Selecione</option>{available.map(n=><option key={n.id} value={n.id}>{n.name}</option>)}</select></label><label>Última questão / posição<input type="number" min="0" value={question} onChange={e=>setQuestion(e.target.value)} placeholder="Ex.: 27"/></label><div className="divider"/><div className="panel-heading"><h3>Desempenho por assunto</h3><button type="button" className="text-button" onClick={()=>setSegments(v=>[...v,{key:makeId(),subjectId:"",questions:"0",correct:"0",difficulties:[]}])}><Plus size={14}/> Adicionar assunto</button></div>{segments.map((segment,index)=><div className="segment-editor" key={segment.key}><div className="segment-head"><strong>Assunto {index+1}</strong>{segments.length>1&&<button type="button" className="text-button danger" onClick={()=>setSegments(v=>v.filter(x=>x.key!==segment.key))}>Remover</button>}</div><label>Assunto<select value={segment.subjectId} onChange={e=>setSegments(v=>v.map(x=>x.key===segment.key?{...x,subjectId:e.target.value}:x))}><option value="">Selecione o assunto</option>{linkedSubjects.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></label><div className="two-fields"><label>Questões<input type="number" min="0" value={segment.questions} onChange={e=>setSegments(v=>v.map(x=>x.key===segment.key?{...x,questions:e.target.value}:x))}/></label><label>Acertos<input type="number" min="0" max={segment.questions} value={segment.correct} onChange={e=>setSegments(v=>v.map(x=>x.key===segment.key?{...x,correct:e.target.value}:x))}/></label></div><div className="difficulty-picks">{["Errei conceitos","Acertei no chute","Acertei sem segurança"].map(label=><label key={label}><input type="checkbox" checked={segment.difficulties.includes(label)} onChange={e=>setSegments(v=>v.map(x=>x.key===segment.key?{...x,difficulties:e.target.checked?[...x.difficulties,label]:x.difficulties.filter(d=>d!==label)}:x))}/>{label}</label>)}</div></div>)}<p className="muted-copy small-copy">Tempo desta sessão: {fmt(sessionElapsed)}. A passada é contada pelo tempo; questões e acertos são registrados separadamente por assunto.</p></div></div>
  {block&&<div className="panel"><div className="panel-heading"><h2>Retomada preservada</h2><RotateCcw size={17}/></div><p className="muted-copy">Seu bloco permanece vinculado ao mesmo caderno. Se você parar agora, o sistema preserva {fmt(elapsed)} e faltam {fmt(progress.remainingSeconds)} para concluir a passada.</p>{canAdvanceToNextNotebook(block)&&<p className="success-copy">Próximo caderno sugerido: {nextNotebook?.name??"Cadastre outro caderno nesta disciplina"}.</p>}</div>}
+ </>;
+}
+function AnalysisPage({subjects,segments,mode}:{subjects:Row[];segments:SegmentRecord[];mode:"diagnosis"|"reports"}){
+ const results=subjects.map(subject=>{
+  const rows=segments.filter(s=>s.subjectId===subject.id).sort((a,b)=>a.date.localeCompare(b.date));
+  const attempts:Attempt[]=rows.map(s=>({questions:s.questions,correct:s.correct,date:s.date}));
+  const exposures:Exposure[]=rows.filter(s=>s.questions>=10).map(s=>({questions:s.questions,correct:s.correct,date:s.date}));
+  const domain=calculateDomain(attempts,exposures);const retention=calculateRetention(exposures);
+  let q=0,a=0;for(const row of [...rows].reverse()){if(q>=30)break;const take=Math.min(row.questions,30-q);if(row.questions>0){q+=take;a+=row.correct*(take/row.questions);}}
+  const persistent=q>=30&&a/q<.6&&exposures.length>=2;
+  return {subject,rows,domain,retention,persistent};
+ });
+ const insufficient=results.filter(x=>x.domain.value===null).length;
+ return <><Header eyebrow={mode==="diagnosis"?"ANÁLISE / EVIDÊNCIAS":"ANÁLISE / DESEMPENHO"} title={mode==="diagnosis"?"Diagnóstico por assunto":"Relatórios de aprendizagem"} subtitle={mode==="diagnosis"?"Identifique dificuldades persistentes sem confundir falta de dados com domínio.":"Acompanhe desempenho atual, retenção e confiança a partir das sessões registradas."}/>
+ <div className="metric-grid"><Metric icon={<Target/>} label="Assuntos cadastrados" value={String(subjects.length)} detail="Na sua trilha"/><Metric icon={<Activity/>} label="Com evidência" value={String(results.filter(x=>x.domain.totalQuestions>0).length)} detail="Com questões registradas"/><Metric icon={<Brain/>} label="Dados insuficientes" value={String(insufficient)} detail="Precisam de mais evidências"/><Metric icon={<TriangleAlert/>} label="Dificuldades persistentes" value={String(results.filter(x=>x.persistent).length)} detail="Critérios iniciais atendidos"/></div>
+ <div className="panel"><div className="panel-heading"><h2>{mode==="diagnosis"?"Situação dos assuntos":"Desempenho por assunto"}</h2></div>{results.length===0?<p className="muted-copy">Cadastre assuntos e registre sessões para gerar análises.</p>:results.map(item=><div className="analysis-row" key={item.subject.id}><div className="analysis-main"><strong>{item.subject.name}</strong><small>{item.domain.totalQuestions} questões · {item.rows.length} registros · {item.domain.confidence==="insufficient"?"Dados insuficientes":item.domain.confidence==="low"?"Confiança baixa":item.domain.confidence==="moderate"?"Confiança moderada":"Confiança alta"}</small></div><div className="analysis-value"><b>{item.domain.value===null?"—":Math.round(item.domain.value)+"%"}</b><small>Domínio</small></div><div className="analysis-value"><b>{item.retention.value===null?"—":Math.round(item.retention.value)+"%"}</b><small>Retenção</small></div><span className={item.persistent?"status-label warning":"status-label success"}>{item.persistent?"Dificuldade persistente":item.domain.value===null?"Coletar dados":"Sem trava confirmada"}</span></div>)}</div>
+ <p className="muted-copy small-copy">As métricas só são apresentadas quando há evidência suficiente. A identificação de dificuldade persistente exige pelo menos 30 questões recentes, desempenho abaixo de 60% e duas exposições distintas. Dependências pedagógicas ainda precisam ser cadastradas para calcular bloqueios entre assuntos.</p>
  </>;
 }
 function FlashcardsPage({disciplines,subjects,cards,reload}:{disciplines:Row[];subjects:Row[];cards:Flashcard[];reload:()=>void}){
