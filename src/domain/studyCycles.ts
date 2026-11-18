@@ -3,7 +3,7 @@ export type StudyCycleProgress = {
   notebookIds: string[];
   currentNotebookIndex: number;
   /** IDs already visited during the current pass; position is never used as identity. */
-  visitedNotebookIds: string[];
+  visitedNotebookIds?: string[];
   passStartedAt?: string;
   completedPassHistory?: Array<{ number: number; startedAt: string; completedAt: string; notebookIds: string[] }>;
   completedPasses: number;
