@@ -21,6 +21,8 @@ jobs:
           node-version: 20
       - name: Instalar dependências
         run: npm install
+      - name: Auditar dependências de produção
+        run: npm audit --omit=dev --audit-level=high
       - name: Executar testes
         run: npm test
       - name: Validar build de produção
