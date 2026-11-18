@@ -41,7 +41,7 @@ const sections: {name:Section; icon:typeof LayoutDashboard}[] = [
 const nowIso=()=>new Date().toISOString();
 const makeId=()=>crypto.randomUUID?.() ?? `id-${Date.now()}-${Math.random()}`;
 const fmt=(s:number)=>`${String(Math.floor(s/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;
-const orderDisciplines=(items:Row[])=>items.slice().sort((a,b)=>(a.generalOrder??Number.MAX_SAFE_INTEGER)-(b.generalOrder??Number.MAX_SAFE_INTEGER)||a.createdAt.localeCompare(b.createdAt));
+const orderDisciplines=(items:Row[])=>{const chronological=items.slice().sort((a,b)=>a.createdAt.localeCompare(b.createdAt));return chronological.slice().sort((a,b)=>(a.generalOrder??chronological.indexOf(a))-(b.generalOrder??chronological.indexOf(b)));};
 const ACTIVE_STUDY_BLOCK_SECONDS=import.meta.env.DEV?15:STUDY_BLOCK_SECONDS;
 
 export default function App(){
