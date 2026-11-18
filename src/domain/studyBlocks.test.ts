@@ -13,6 +13,7 @@ import {
 
 const block: StudyBlock = {
   id: "block-1",
+  createdAt: "2026-11-18T10:00:00.000Z",
   disciplineId: "constitutional",
   notebookId: "notebook-03",
   elapsedSeconds: 0,
