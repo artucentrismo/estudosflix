@@ -37,7 +37,7 @@ describe("bloco pedagógico de 15 minutos", () => {
     expect(canAdvanceToNextNotebook(resumed)).toBe(false);
   });
 
-  it("só conclui a passada ao acumular 15 minutos", () => {
+  it("só conclui o bloco do caderno ao acumular 15 minutos", () => {
     const partial = addStudyTime(block, 9 * 60);
     const resumed = resumeStudyBlock(pauseStudyBlock(partial));
     const completed = addStudyTime(resumed, 6 * 60);

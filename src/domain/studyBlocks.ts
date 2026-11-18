@@ -1,7 +1,7 @@
 /**
  * Regras pedagógicas dos blocos de estudo do EstudosFlix.
  * Um bloco corresponde a 15 minutos acumulados no mesmo caderno.
- * Interrupções preservam o tempo e a posição; só 900 segundos concluem uma passada.
+ * Interrupções preservam o tempo e a posição; só 900 segundos concluem o bloco do caderno.
  */
 
 export const STUDY_BLOCK_SECONDS = 15 * 60;
@@ -68,7 +68,7 @@ export function resumeStudyBlock(block: StudyBlock, now = new Date().toISOString
   return { ...block, status: "in_progress", updatedAt: now };
 }
 
-/** Só uma passada completa pode liberar a rotação para o próximo caderno. */
+/** Um bloco concluído libera a rotação para o próximo caderno; a passada depende do ciclo inteiro. */
 export function canAdvanceToNextNotebook(block: StudyBlock): boolean {
   return block.status === "completed" && block.elapsedSeconds >= STUDY_BLOCK_SECONDS;
 }

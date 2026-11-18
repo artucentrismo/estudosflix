@@ -25,28 +25,18 @@ Cada navegador/dispositivo mantém sua própria base local. Para levar os dados 
 - [Especificação do produto v1.0](docs/ESPECIFICACAO-PRODUTO.md)
 - [Arquitetura técnica](docs/ARQUITETURA-TECNICA.md)
 - [Decisões e pontos de validação](docs/DECISOES-PENDENTES.md)
-- [Requisitos pedagógicos dos blocos de 15 minutos](docs/requisitos-blocos-15-minutos.md)
+- [Requisitos pedagógicos do ciclo e dos blocos de 15 minutos](docs/requisitos-blocos-15-minutos.md)
+- [UX estruturada v2.0](docs/UX-ESTUDOSFLIX-v2.md)
 
 ## Stack
 React + TypeScript + Vite + PWA + IndexedDB. GitHub Pages pode hospedar os arquivos estáticos do WebApp; não hospeda dados pessoais.
 
 ## Estado do projeto
 
-A implementação funcional está em desenvolvimento na branch `feature/indexeddb-foundation` e na [PR #2](https://github.com/artucentrismo/estudosflix/pull/2). A versão publicada em GitHub Pages só será atualizada depois da revisão e integração da PR.
+A versão publicada está na branch `main`. A evolução da experiência v2 está em desenvolvimento na branch `feature/cycle-first-ux` e será integrada somente após revisão e validação automatizada.
 
-Já estão conectados ao IndexedDB:
-- cadastro de disciplinas, assuntos, subassuntos e cadernos;
-- associação de assuntos aos cadernos e pré-requisitos com proteção contra ciclos;
-- plano de estudos com distribuição de tempo em blocos de 15 minutos;
-- cronômetro por caderno, pausa, retomada e preservação da última questão;
-- rotação entre cadernos elegíveis, considerando bloqueios de pré-requisitos com evidência suficiente;
-- sessões contínuas que podem conter várias passadas e vários cadernos;
-- registro de questões, acertos e dificuldades por assunto;
-- histórico, domínio, retenção, diagnóstico e relatórios;
-- flashcards com fila diária, histórico de revisão e arquivamento por evidência;
-- tema claro/escuro e backup/importação com validação e transação atômica.
+A proposta v2 reorganiza a experiência em quatro áreas principais: Início, Disciplinas, Revisões e Evolução. O ciclo contínuo de cadernos passa a ser o motor da recomendação: cada bloco tem 15 minutos em um caderno, enquanto uma passada só é concluída após percorrer todos os cadernos elegíveis da disciplina.
 
-A validação automatizada de testes, build e auditoria de dependências de produção está sendo executada no GitHub Actions. Ainda são necessários testes manuais em Safari/iPadOS e dispositivos móveis, validação do comportamento offline/PWA, revisão completa de acessibilidade e auditoria das dependências de desenvolvimento. Não trate a versão atual como pronta para dados importantes até a revisão final e os testes em dispositivos reais.
+A branch v2 inclui o início da nova navegação, associação de assuntos dentro do cadastro de cadernos, ordenação dos cadernos, progresso persistente do ciclo, painel do próximo estudo, revisões fora do ciclo e centralização de evolução/histórico/diagnóstico.
 
-## Privacidade
-Os dados de estudo ficam no armazenamento local do navegador/dispositivo. Não existe sincronização automática: cada dispositivo mantém seus próprios dados. A transferência é feita manualmente por backup e importação. O GitHub armazena apenas o código-fonte e a documentação do projeto.
+Ainda precisam ser concluídos e validados os testes automatizados da branch, revisão dos fluxos de dados existentes e testes manuais em Safari/iPadOS e dispositivos móveis. A versão publicada não muda até a integração da nova branch.
