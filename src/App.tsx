@@ -5,7 +5,7 @@ import { calculateDomain, calculateRetention, type Attempt, type Exposure } from
 import {
   Activity, ArrowRight, BookOpen, Brain, CalendarDays, Check, Clock3,
   GraduationCap, LayoutDashboard, Library, Moon, Plus, Settings2, Sun,
-  Target, TrendingUp, Upload, Download, Play, Pause, RotateCcw, Trash2
+  Target, TrendingUp, Upload, Download, Play, Pause, RotateCcw, Trash2, TriangleAlert
 } from "lucide-react";
 import {
   disciplineRepository, notebookRepository, sessionRepository, sessionSegmentRepository, studyBlockRepository,
