@@ -80,6 +80,19 @@ export function reviewFlashcard(
   return { card: updatedCard, review };
 }
 
+
+export function reactivateFlashcard(card: Flashcard, updatedAt = new Date().toISOString()): Flashcard {
+  return {
+    ...card,
+    archived: false,
+    consecutiveCorrect: 0,
+    level: 0,
+    reactivationCount: (card.reactivationCount ?? 0) + 1,
+    nextReviewAt: updatedAt,
+    updatedAt,
+  };
+}
+
 export function calculateFlashcardPriority(card: Flashcard, now = new Date()): number {
   const results = card.recentResults ?? [];
   const recurrence = results.length ? (results.filter(result => !result).length / results.length) * 100 : 0;
