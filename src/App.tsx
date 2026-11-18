@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";\nimport type { ReactNode } from "react";
 import {
   Activity, ArrowRight, BookOpen, Brain, CalendarDays, Check, ChevronDown,
   ChevronRight, CircleAlert, Clock3, Compass, GraduationCap, LayoutDashboard,
@@ -47,7 +47,7 @@ function App() {
 
 function Dashboard({ onNavigate, expanded, setExpanded }: { onNavigate: (s: Section) => void; expanded: boolean; setExpanded: (v: boolean) => void }) {
   return <div className="page-content">
-    <div className="welcome-row"><div><div className="eyebrow">QUARTA-FEIRA, 18 DE NOVEMBRO</div><h1>Bom estudo! <span>👋</span></h1><p>Pequenos avanços consistentes constroem grandes resultados.</p></div><button className="button secondary" onClick={() => onNavigate("Registrar sessão")}><Plus size={16}/> Registrar sessão</button></div>
+    <div className="welcome-row"><div><div className="eyebrow">{new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "2-digit", month: "long" }).format(new Date()).toUpperCase()}</div><h1>Bom estudo! <span>👋</span></h1><p>Pequenos avanços consistentes constroem grandes resultados.</p></div><button className="button secondary" onClick={() => onNavigate("Registrar sessão")}><Plus size={16}/> Registrar sessão</button></div>
     <div className="demo-notice"><Sparkles size={15}/><span>Prévia da interface — os números abaixo são demonstrativos e ainda não representam dados salvos.</span></div>
     <section className="metric-grid">
       <Metric icon={<Target size={18}/>} label="Domínio geral" value="72%" detail="Confiança moderada" tone="blue" progress={72}/>
@@ -70,7 +70,7 @@ function Dashboard({ onNavigate, expanded, setExpanded }: { onNavigate: (s: Sect
   </div>;
 }
 
-function Metric({ icon, label, value, detail, tone, progress }: { icon: React.ReactNode; label: string; value: string; detail: string; tone: string; progress?: number }) {
+function Metric({ icon, label, value, detail, tone, progress }: { icon: ReactNode; label: string; value: string; detail: string; tone: string; progress?: number }) {
   return <div className="metric-card"><div className="metric-top"><span className={"metric-icon "+tone}>{icon}</span><span>{label}</span></div><div className="metric-value">{value}</div><div className="metric-detail">{detail}</div>{progress !== undefined && <div className="metric-progress"><span style={{width:progress+"%"}}/></div>}</div>;
 }
 
