@@ -137,10 +137,11 @@ function StudyPage({disciplines,notebooks,subjects,blocks,reload}:{disciplines:R
  const [notebookId,setNotebookId]=useState(paused?.notebookId??"");
  const [elapsed,setElapsed]=useState(paused?.elapsedSeconds??0);
  const [sessionElapsed,setSessionElapsed]=useState(0);
- const [running,setRunning]=useState(paused?.status==="in_progress");
+ const [running,setRunning]=useState(false);
  const [question,setQuestion]=useState(paused?.lastQuestionNumber?String(paused.lastQuestionNumber):"");
  const [segments,setSegments]=useState<SegmentDraft[]>([{key:makeId(),subjectId:"",questions:"0",correct:"0",difficulties:[]}]);
- const [block,setBlock]=useState<StudyBlock|undefined>(paused);
+ const [block,setBlock]=useState<StudyBlock|undefined>(paused?{...paused,status:"paused"}:undefined);
+ useEffect(()=>{if(paused?.status==="in_progress"){void studyBlockRepository.save({...paused,status:"paused",updatedAt:nowIso()});}},[]);
  const elapsedRef=useRef(elapsed);
  useEffect(()=>{elapsedRef.current=elapsed;},[elapsed]);
  const [saving,setSaving]=useState(false);const [message,setMessage]=useState("");
