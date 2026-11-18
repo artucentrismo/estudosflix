@@ -119,8 +119,9 @@ function Dashboard({disciplines,notebooks,sessions,blocks,flashcards,reviewLimit
  const dueCards=selectDailyReviewQueue(flashcards,new Date(),reviewLimit).length;
  const activeNotebook=activeBlock?notebooks.find(n=>n.id===activeBlock.notebookId):undefined;
  const nextDiscipline=disciplines.find(d=>notebooks.some(n=>n.disciplineId===d.id));
- const cycle=nextDiscipline?cycles[nextDiscipline.id]:undefined;
- const ordered=notebooks.filter(n=>n.disciplineId===nextDiscipline?.id).sort((a,b)=>(a.cycleOrder??0)-(b.cycleOrder??0)||a.createdAt.localeCompare(b.createdAt));
+ const targetDiscipline=activeBlock?disciplines.find(d=>d.id===activeBlock.disciplineId):nextDiscipline;
+ const cycle=targetDiscipline?cycles[targetDiscipline.id]:undefined;
+ const ordered=notebooks.filter(n=>n.disciplineId===targetDiscipline?.id).sort((a,b)=>(a.cycleOrder??0)-(b.cycleOrder??0)||a.createdAt.localeCompare(b.createdAt));
  const nextNotebook=activeNotebook??notebooks.find(n=>n.id===cycle?.notebookIds[cycle.currentNotebookIndex])??ordered[0];
  return <><Header eyebrow="SEU CICLO DE ESTUDOS" title="O que vamos estudar agora?" subtitle="O EstudosFlix organiza o próximo passo. Você só precisa seguir o ciclo."/>
  <div className="content-grid">
