@@ -2,9 +2,10 @@
 
 ## Aprovado pela equipe
 
-- Aplicativo desktop local e offline.
-- Sem IA, APIs, nuvem ou banco de questões.
-- SQLite local.
+- WebApp responsivo acessível por navegador em computadores, iPads e celulares.
+- PWA instalável opcionalmente; abrir pelo link não exige instalação.
+- IndexedDB local em todos os dispositivos.
+- Sem IA, APIs, nuvem, contas online, sincronização ou banco de questões.
 - Sessão única com vários segmentos por assunto.
 - Domínio baseado em desempenho atual, consistência e experiência, com teto implícito no desempenho atual.
 - Retenção por exposições sucessivas.
@@ -37,3 +38,4 @@
 - Validar se a fórmula de consistência (1 - DP/50) é adequada para exposições muito heterogêneas.
 
 Os limiares são regras iniciais versionadas, não verdades universais. Não devem ser alterados sem registrar a justificativa e atualizar os testes.
+\n\n## Decisão de produto: WebApp universal\n\nA experiência principal será uma única aplicação web responsiva. Não será mantida uma versão desktop nativa separada no MVP. A instalação PWA é opcional e serve apenas para facilitar o acesso; o endereço web continua sendo a porta principal de entrada. Cada navegador/dispositivo armazena seus próprios dados localmente no IndexedDB. A transferência entre aparelhos será feita por backup/importação manual.\n
