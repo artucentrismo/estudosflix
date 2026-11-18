@@ -14,13 +14,13 @@ import {
   getStudyBlockProgress, pauseStudyBlock, resumeStudyBlock, type StudyBlock
 } from "./domain/studyBlocks";
 
-type Section = "Painel" | "Estudar" | "Disciplinas" | "Cadernos" | "Histórico" | "Configurações";
+type Section = "Painel" | "Estudar" | "Disciplinas" | "Assuntos" | "Cadernos" | "Histórico" | "Configurações";
 type Row = { id:string; name:string; createdAt:string; updatedAt:string; disciplineId?:string; description?:string };
 type Session = { id:string; createdAt:string; updatedAt:string; disciplineId:string; notebookId:string; durationSeconds:number; questions:number; correct:number; date:string };
 
 const sections: {name:Section; icon:typeof LayoutDashboard}[] = [
   {name:"Painel",icon:LayoutDashboard},{name:"Estudar",icon:BookOpen},
-  {name:"Disciplinas",icon:GraduationCap},{name:"Cadernos",icon:Library},
+  {name:"Disciplinas",icon:GraduationCap},{name:"Assuntos",icon:Target},{name:"Cadernos",icon:Library},
   {name:"Histórico",icon:TrendingUp},{name:"Configurações",icon:Settings2}
 ];
 
@@ -72,6 +72,7 @@ export default function App(){
         {!loading&&section==="Painel"&&<Dashboard disciplines={disciplines} notebooks={notebooks} sessions={sessions} onGo={setSection}/>}
         {!loading&&section==="Estudar"&&<StudyPage disciplines={disciplines} notebooks={notebooks} subjects={subjects} blocks={blocks} reload={()=>setRefresh(x=>x+1)}/>}
         {!loading&&section==="Disciplinas"&&<DisciplinePage disciplines={disciplines} reload={()=>setRefresh(x=>x+1)}/>}
+        {!loading&&section==="Assuntos"&&<SubjectPage disciplines={disciplines} subjects={subjects} reload={()=>setRefresh(x=>x+1)}/>}
         {!loading&&section==="Cadernos"&&<NotebookPage disciplines={disciplines} notebooks={notebooks} reload={()=>setRefresh(x=>x+1)}/>}
         {!loading&&section==="Histórico"&&<HistoryPage sessions={sessions} disciplines={disciplines} notebooks={notebooks}/>}
         {!loading&&section==="Configurações"&&<SettingsPage dark={dark} setDark={setDark} reload={()=>setRefresh(x=>x+1)}/>}
@@ -110,10 +111,18 @@ function DisciplinePage({disciplines,reload}:{disciplines:Row[];reload:()=>void}
  async function remove(id:string){if(!confirm("Excluir esta disciplina? Os cadernos vinculados não serão excluídos automaticamente."))return;await disciplineRepository.remove(id);reload();}
  return <><Header eyebrow="PLANEJAMENTO" title="Disciplinas" subtitle="Cadastre as disciplinas que organizam sua jornada de aprendizagem."/><div className="content-grid"><form className="panel form-panel" onSubmit={save}><h2>Nova disciplina</h2><label>Nome da disciplina<input value={name} onChange={e=>setName(e.target.value)} placeholder="Ex.: Direito Constitucional" required/></label><label>Descrição (opcional)<textarea value={description} onChange={e=>setDescription(e.target.value)} placeholder="Objetivo ou observações"/></label>{msg&&<p className="error-text">{msg}</p>}<button className="button primary" disabled={busy}>{busy?"Salvando…":<><Plus size={16}/> Adicionar disciplina</>}</button></form><div className="panel"><div className="panel-heading"><h2>Suas disciplinas</h2><b>{disciplines.length}</b></div>{disciplines.length===0?<p className="muted-copy">Nenhuma disciplina cadastrada.</p>:disciplines.map(d=><div className="diagnostic-row" key={d.id}><span className="diagnostic-dot green-dot"/><div><strong>{d.name}</strong><small>{d.description||"Sem descrição"}</small></div><button className="icon-button danger" onClick={()=>void remove(d.id)} aria-label={"Excluir "+d.name}><Trash2 size={16}/></button></div>)}</div></div></>;
 }
+function SubjectPage({disciplines,subjects,reload}:{disciplines:Row[];subjects:Row[];reload:()=>void}){
+ const [disciplineId,setDisciplineId]=useState(disciplines[0]?.id??"");const [name,setName]=useState("");const [description,setDescription]=useState("");const [parentId,setParentId]=useState("");
+ useEffect(()=>{if(!disciplineId&&disciplines[0])setDisciplineId(disciplines[0].id);},[disciplines,disciplineId]);
+ const filtered=subjects.filter(s=>s.disciplineId===disciplineId);
+ async function save(e:FormEvent){e.preventDefault();if(!disciplineId||!name.trim())return;await subjectRepository.save({name:name.trim(),description:description.trim(),disciplineId,parentId:parentId||undefined});setName("");setDescription("");setParentId("");reload();}
+ async function remove(id:string){if(!confirm("Excluir este assunto?"))return;await subjectRepository.remove(id);reload();}
+ return <><Header eyebrow="PLANEJAMENTO" title="Assuntos e subassuntos" subtitle="Estruture o conteúdo dentro de cada disciplina e organize os pré-requisitos da sua trilha."/><div className="content-grid"><form className="panel form-panel" onSubmit={save}><h2>Novo assunto</h2><label>Disciplina<select value={disciplineId} onChange={e=>setDisciplineId(e.target.value)} required><option value="">Selecione</option>{disciplines.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></label><label>Nome do assunto<input value={name} onChange={e=>setName(e.target.value)} placeholder="Ex.: Direitos fundamentais" required/></label><label>Assunto principal (opcional)<select value={parentId} onChange={e=>setParentId(e.target.value)}><option value="">É um assunto principal</option>{filtered.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></label><label>Descrição<textarea value={description} onChange={e=>setDescription(e.target.value)}/></label><button className="button primary" disabled={!disciplines.length}><Plus size={16}/> Adicionar assunto</button>{!disciplines.length&&<p className="muted-copy">Cadastre uma disciplina primeiro.</p>}</form><div className="panel"><div className="panel-heading"><h2>Assuntos cadastrados</h2><b>{filtered.length}</b></div>{filtered.length===0?<p className="muted-copy">Nenhum assunto nesta disciplina.</p>:filtered.map(s=><div className="diagnostic-row" key={s.id}><span className="diagnostic-dot blue-dot"/><div><strong>{s.parentId?"↳ ":""}{s.name}</strong><small>{s.description|| (s.parentId?"Subassunto":"Assunto principal")}</small></div><button className="icon-button danger" onClick={()=>void remove(s.id)} aria-label={"Excluir "+s.name}><Trash2 size={16}/></button></div>)}</div></div></>;
+}
 function NotebookPage({disciplines,notebooks,reload}:{disciplines:Row[];notebooks:Row[];reload:()=>void}){
  const [name,setName]=useState("");const [disciplineId,setDisciplineId]=useState(disciplines[0]?.id??"");const [description,setDescription]=useState("");
  useEffect(()=>{if(!disciplineId&&disciplines[0])setDisciplineId(disciplines[0].id);},[disciplines,disciplineId]);
- async function save(e:React.FormEvent){e.preventDefault();if(!name.trim()||!disciplineId)return;await notebookRepository.save({name:name.trim(),disciplineId,description:description.trim()});setName("");setDescription("");reload();}
+ async function save(e:FormEvent){e.preventDefault();if(!name.trim()||!disciplineId)return;await notebookRepository.save({name:name.trim(),disciplineId,description:description.trim()});setName("");setDescription("");reload();}
  async function remove(id:string){if(!confirm("Excluir este caderno?"))return;await notebookRepository.remove(id);reload();}
  return <><Header eyebrow="PLANEJAMENTO" title="Cadernos" subtitle="Organize os cadernos por disciplina. Cada passada de estudo dura 15 minutos."/><div className="content-grid"><form className="panel form-panel" onSubmit={save}><h2>Novo caderno</h2><label>Disciplina<select value={disciplineId} onChange={e=>setDisciplineId(e.target.value)} required><option value="">Selecione</option>{disciplines.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></label><label>Nome do caderno<input value={name} onChange={e=>setName(e.target.value)} placeholder="Ex.: 01 — Conceitos" required/></label><label>Observações<textarea value={description} onChange={e=>setDescription(e.target.value)}/></label><button className="button primary" disabled={!disciplines.length}><Plus size={16}/> Adicionar caderno</button>{!disciplines.length&&<p className="muted-copy">Cadastre uma disciplina primeiro.</p>}</form><div className="panel"><h2>Seus cadernos</h2>{notebooks.length===0?<p className="muted-copy">Nenhum caderno cadastrado.</p>:notebooks.map(n=><div className="diagnostic-row" key={n.id}><span className="diagnostic-dot blue-dot"/><div><strong>{n.name}</strong><small>{disciplines.find(d=>d.id===n.disciplineId)?.name??"Disciplina não encontrada"}</small></div><button className="icon-button danger" onClick={()=>void remove(n.id)} aria-label={"Excluir "+n.name}><Trash2 size={16}/></button></div>)}</div></div></>;
 }
@@ -126,7 +135,8 @@ function StudyPage({disciplines,notebooks,subjects,blocks,reload}:{disciplines:R
  const [question,setQuestion]=useState(paused?.lastQuestionNumber?String(paused.lastQuestionNumber):"");
  const [questions,setQuestions]=useState("0");const [correct,setCorrect]=useState("0");
  const [subjectId,setSubjectId]=useState("");
- const [block,setBlock]=useState<StudyBlock|undefined>(paused);\n const elapsedRef=useRef(elapsed);\n useEffect(()=>{elapsedRef.current=elapsed;},[elapsed]);
+ const [block,setBlock]=useState<StudyBlock|undefined>(paused);
+ const elapsedRef=useRef(elapsed);\n useEffect(()=>{elapsedRef.current=elapsed;},[elapsed]);
  const [saving,setSaving]=useState(false);const [message,setMessage]=useState("");
  const available=notebooks.filter(n=>n.disciplineId===disciplineId);
  const progress=getStudyBlockProgress({elapsedSeconds:elapsed});
