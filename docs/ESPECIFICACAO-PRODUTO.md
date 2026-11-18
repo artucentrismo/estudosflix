@@ -30,7 +30,7 @@ Assuntos e subassuntos legados podem permanecer no armazenamento para compatibil
 
 Disciplina → Cadernos → Flashcards.
 
-A disciplina possui nome e tempo recomendado personalizado. O caderno possui nome, posição de exibição e ID permanente. A posição pode mudar; o ID não muda e preserva todo o histórico.
+A disciplina possui nome, tempo recomendado personalizado e posição configurável no ciclo geral. O caderno possui nome, posição de exibição e ID permanente. A posição pode mudar; o ID não muda e preserva todo o histórico.
 
 ## 5. Ciclo geral por matéria
 
