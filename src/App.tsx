@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
+import { reviewFlashcard, selectDailyReviewQueue, type Flashcard } from "./domain/flashcards";
 import {
   Activity, ArrowRight, BookOpen, Brain, CalendarDays, Check, Clock3,
   GraduationCap, LayoutDashboard, Library, Moon, Plus, Settings2, Sun,
@@ -7,21 +8,21 @@ import {
 } from "lucide-react";
 import {
   disciplineRepository, notebookRepository, sessionRepository, sessionSegmentRepository, studyBlockRepository,
-  subjectRepository, settingsRepository, flashcardRepository
+  subjectRepository, settingsRepository, flashcardRepository, flashcardReviewRepository
 } from "./storage/repositories";
 import {
   STUDY_BLOCK_SECONDS, addStudyTime, canAdvanceToNextNotebook,
   getStudyBlockProgress, pauseStudyBlock, resumeStudyBlock, type StudyBlock
 } from "./domain/studyBlocks";
 
-type Section = "Painel" | "Estudar" | "Disciplinas" | "Assuntos" | "Cadernos" | "Histórico" | "Configurações";
+type Section = "Painel" | "Estudar" | "Disciplinas" | "Assuntos" | "Cadernos" | "Flashcards" | "Histórico" | "Configurações";
 type Row = { id:string; name:string; createdAt:string; updatedAt:string; disciplineId?:string; description?:string; parentId?:string };
 type Session = { id:string; createdAt:string; updatedAt:string; disciplineId:string; notebookId:string; durationSeconds:number; questions:number; correct:number; date:string };
 type SegmentDraft = { key:string; subjectId:string; questions:string; correct:string; difficulties:string[] };
 
 const sections: {name:Section; icon:typeof LayoutDashboard}[] = [
   {name:"Painel",icon:LayoutDashboard},{name:"Estudar",icon:BookOpen},
-  {name:"Disciplinas",icon:GraduationCap},{name:"Assuntos",icon:Target},{name:"Cadernos",icon:Library},
+  {name:"Disciplinas",icon:GraduationCap},{name:"Assuntos",icon:Target},{name:"Cadernos",icon:Library},{name:"Flashcards",icon:Brain},
   {name:"Histórico",icon:TrendingUp},{name:"Configurações",icon:Settings2}
 ];
 
@@ -37,6 +38,7 @@ export default function App(){
   const [subjects,setSubjects]=useState<Row[]>([]);
   const [sessions,setSessions]=useState<Session[]>([]);
   const [blocks,setBlocks]=useState<StudyBlock[]>([]);
+  const [flashcards,setFlashcards]=useState<Flashcard[]>([]);
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState("");
   const [refresh,setRefresh]=useState(0);
@@ -44,12 +46,12 @@ export default function App(){
   const reload=useCallback(async()=>{
     setLoading(true); setError("");
     try{
-      const [d,n,s,h,b,theme]=await Promise.all([
+      const [d,n,s,h,b,fc,theme]=await Promise.all([
         disciplineRepository.list(),notebookRepository.list(),subjectRepository.list(),
-        sessionRepository.list(),studyBlockRepository.list(),settingsRepository.get("theme") as Promise<string | undefined>
+        sessionRepository.list(),studyBlockRepository.list(),flashcardRepository.list(),settingsRepository.get("theme") as Promise<string | undefined>
       ]);
       setDisciplines(d as Row[]); setNotebooks(n as Row[]); setSubjects(s as Row[]);
-      setSessions(h as Session[]); setBlocks(b); setDark(theme==="dark");
+      setSessions(h as Session[]); setBlocks(b); setFlashcards(fc as Flashcard[]); setDark(theme==="dark");
     }catch(e){setError(e instanceof Error?e.message:"Não foi possível carregar os dados locais.");}
     finally{setLoading(false);}
   },[]);
@@ -76,6 +78,7 @@ export default function App(){
         {!loading&&section==="Assuntos"&&<SubjectPage disciplines={disciplines} subjects={subjects} reload={()=>setRefresh(x=>x+1)}/>}
         {!loading&&section==="Assuntos"&&<SubjectPage disciplines={disciplines} subjects={subjects} reload={()=>setRefresh(x=>x+1)}/>}
         {!loading&&section==="Cadernos"&&<NotebookPage disciplines={disciplines} notebooks={notebooks} reload={()=>setRefresh(x=>x+1)}/>}
+        {!loading&&section==="Flashcards"&&<FlashcardsPage disciplines={disciplines} subjects={subjects} cards={flashcards} reload={()=>setRefresh(x=>x+1)}/>}
         {!loading&&section==="Histórico"&&<HistoryPage sessions={sessions} disciplines={disciplines} notebooks={notebooks}/>}
         {!loading&&section==="Configurações"&&<SettingsPage dark={dark} setDark={setDark} reload={()=>setRefresh(x=>x+1)}/>}
       </div>
@@ -168,6 +171,20 @@ function StudyPage({disciplines,notebooks,subjects,blocks,reload}:{disciplines:R
  </div>
  <div className="panel form-panel"><h2>Configurar estudo</h2><label>Disciplina<select value={disciplineId} onChange={e=>{setDisciplineId(e.target.value);setNotebookId("");}} disabled={!!block&&elapsed>0}><option value="">Selecione</option>{disciplines.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></label><label>Caderno<select value={notebookId} onChange={e=>setNotebookId(e.target.value)} disabled={!!block&&elapsed>0}><option value="">Selecione</option>{available.map(n=><option key={n.id} value={n.id}>{n.name}</option>)}</select></label><label>Última questão / posição<input type="number" min="0" value={question} onChange={e=>setQuestion(e.target.value)} placeholder="Ex.: 27"/></label><label>Assunto (opcional)<select value={subjectId} onChange={e=>setSubjectId(e.target.value)}><option value="">Não especificado</option>{linkedSubjects.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></label><div className="divider"/><div className="panel-heading"><h3>Desempenho por assunto</h3><button type="button" className="text-button" onClick={()=>setSegments(v=>[...v,{key:makeId(),subjectId:"",questions:"0",correct:"0",difficulties:[]}])}><Plus size={14}/> Adicionar assunto</button></div>{segments.map((segment,index)=><div className="segment-editor" key={segment.key}><div className="segment-head"><strong>Assunto {index+1}</strong>{segments.length>1&&<button type="button" className="text-button danger" onClick={()=>setSegments(v=>v.filter(x=>x.key!==segment.key))}>Remover</button>}</div><label>Assunto<select value={segment.subjectId} onChange={e=>setSegments(v=>v.map(x=>x.key===segment.key?{...x,subjectId:e.target.value}:x))}><option value="">Selecione o assunto</option>{linkedSubjects.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></label><div className="two-fields"><label>Questões<input type="number" min="0" value={segment.questions} onChange={e=>setSegments(v=>v.map(x=>x.key===segment.key?{...x,questions:e.target.value}:x))}/></label><label>Acertos<input type="number" min="0" max={segment.questions} value={segment.correct} onChange={e=>setSegments(v=>v.map(x=>x.key===segment.key?{...x,correct:e.target.value}:x))}/></label></div><div className="difficulty-picks">{["Errei conceitos","Acertei no chute","Acertei sem segurança"].map(label=><label key={label}><input type="checkbox" checked={segment.difficulties.includes(label)} onChange={e=>setSegments(v=>v.map(x=>x.key===segment.key?{...x,difficulties:e.target.checked?[...x.difficulties,label]:x.difficulties.filter(d=>d!==label)}:x))}/>{label}</label>)}</div></div>)}<p className="muted-copy small-copy">Tempo desta sessão: {fmt(sessionElapsed)}. A passada é contada pelo tempo; questões e acertos são registrados separadamente por assunto.</p></div></div>
  {block&&<div className="panel"><div className="panel-heading"><h2>Retomada preservada</h2><RotateCcw size={17}/></div><p className="muted-copy">Seu bloco permanece vinculado ao mesmo caderno. Se você parar agora, o sistema preserva {fmt(elapsed)} e faltam {fmt(progress.remainingSeconds)} para concluir a passada.</p>{canAdvanceToNextNotebook(block)&&<p className="success-copy">Próximo caderno sugerido: {nextNotebook?.name??"Cadastre outro caderno nesta disciplina"}.</p>}</div>}
+ </>;
+}
+function FlashcardsPage({disciplines,subjects,cards,reload}:{disciplines:Row[];subjects:Row[];cards:Flashcard[];reload:()=>void}){
+ const [subjectId,setSubjectId]=useState(subjects[0]?.id??"");const [front,setFront]=useState("");const [back,setBack]=useState("");
+ const [activeId,setActiveId]=useState<string|undefined>();const [revealed,setRevealed]=useState(false);const [startedAt,setStartedAt]=useState(0);const [message,setMessage]=useState("");
+ const queue=selectDailyReviewQueue(cards,new Date(),30);const current=queue.find(c=>c.id===activeId)??queue[0];
+ async function create(e:FormEvent){e.preventDefault();if(!subjectId||!front.trim()||!back.trim())return;const duplicate=cards.find(c=>c.subjectId===subjectId&&c.front.trim().toLowerCase()===front.trim().toLowerCase()&&!c.archived);const now=nowIso();if(duplicate){await flashcardRepository.save({...duplicate,back:back.trim(),updatedAt:now});setMessage("Card existente atualizado para evitar duplicação.");}else{const card:Flashcard={id:makeId(),createdAt:now,updatedAt:now,subjectId,front:front.trim(),back:back.trim(),level:0,consecutiveCorrect:0,reviewCount:0,responseTimeTotalMs:0,responseTimeCount:0,nextReviewAt:now,archived:false};await flashcardRepository.save(card);setMessage("Flashcard criado e incluído na fila de revisão.");}setFront("");setBack("");reload();}
+ function beginReview(card:Flashcard){setActiveId(card.id);setRevealed(false);setStartedAt(Date.now());}
+ async function grade(remembered:boolean){if(!current)return;const now=nowIso();const result=reviewFlashcard(current,remembered,Math.max(0,Date.now()-startedAt),now);await flashcardRepository.save(result.card);await flashcardReviewRepository.save(result.review);setActiveId(undefined);setRevealed(false);setMessage(result.card.archived?"Card arquivado automaticamente após evidência consistente.":remembered?"Revisão registrada.":"Card voltou ao início da sequência de revisão.");reload();}
+ const activeCards=cards.filter(c=>!c.archived);
+ return <><Header eyebrow="ESTUDAR / REVISÕES" title="Flashcards" subtitle="Cards curtos para corrigir lacunas identificadas durante a prática de questões."/><div className="metric-grid"><Metric icon={<Brain/>} label="Cards ativos" value={String(activeCards.length)} detail="No seu acervo"/><Metric icon={<CalendarDays/>} label="Para revisar hoje" value={String(queue.length)} detail="Limite diário de 30"/><Metric icon={<Check/>} label="Arquivados" value={String(cards.filter(c=>c.archived).length)} detail="Mantidos no histórico"/><Metric icon={<Target/>} label="Assuntos cobertos" value={String(new Set(cards.map(c=>c.subjectId)).size)} detail="Com flashcards"/></div>
+ <div className="content-grid"><form className="panel form-panel" onSubmit={create}><h2>Novo flashcard</h2><label>Assunto de origem<select value={subjectId} onChange={e=>setSubjectId(e.target.value)} required><option value="">Selecione</option>{subjects.map(s=><option key={s.id} value={s.id}>{disciplines.find(d=>d.id===s.disciplineId)?.name} · {s.name}</option>)}</select></label><label>Pergunta<input value={front} onChange={e=>setFront(e.target.value)} placeholder="Uma pergunta direta, um conceito" required/></label><label>Resposta<textarea value={back} onChange={e=>setBack(e.target.value)} placeholder="Resposta curta e objetiva" required/></label><button className="button primary" disabled={!subjects.length}><Plus size={16}/> Criar flashcard</button>{!subjects.length&&<p className="muted-copy">Cadastre um assunto primeiro.</p>}</form>
+ <div className="panel review-panel"><div className="panel-heading"><div><span className="eyebrow">FILA DIÁRIA</span><h2>Revisar agora</h2></div><span className="status-label success">{queue.length} / 30</span></div>{current?<><div className="review-card"><span className="eyebrow">PERGUNTA</span><h3>{current.front}</h3>{revealed?<div className="review-answer"><span className="eyebrow">RESPOSTA</span><p>{current.back}</p></div>:<button className="button secondary" onClick={()=>{setRevealed(true);setStartedAt(startedAt||Date.now());}}>Mostrar resposta</button>}</div>{revealed&&<div className="timer-actions"><button className="button secondary" onClick={()=>void grade(false)}>Não lembrei</button><button className="button primary" onClick={()=>void grade(true)}>Lembrei</button></div>}</>:<p className="muted-copy">Sua fila está vazia. Crie flashcards a partir de lacunas ou volte às questões para identificar novos conceitos.</p>}{message&&<p className="muted-copy" role="status">{message}</p>}</div></div>
+ <div className="panel"><div className="panel-heading"><h2>Biblioteca de flashcards</h2><b>{cards.length}</b></div>{cards.length===0?<p className="muted-copy">Nenhum flashcard cadastrado.</p>:cards.map(card=><div className="diagnostic-row" key={card.id}><span className={card.archived?"diagnostic-dot green-dot":"diagnostic-dot blue-dot"}/><div><strong>{card.front}</strong><small>{subjects.find(s=>s.id===card.subjectId)?.name??"Assunto"} · {card.archived?"Arquivado":`Nível interno ${card.level} · ${card.consecutiveCorrect} acertos seguidos`}</small></div>{!card.archived&&<button className="text-button" onClick={()=>beginReview(card)}>Revisar</button>}</div>)}</div>
  </>;
 }
 function HistoryPage({sessions,disciplines,notebooks}:{sessions:Session[];disciplines:Row[];notebooks:Row[]}){
