@@ -17,6 +17,7 @@ import {
   getStudyBlockProgress, pauseStudyBlock, resumeStudyBlock, type StudyBlock
 } from "./domain/studyBlocks";
 import { completeCycleNotebook, getCycleProgressPercent, reconcileStudyCycle, type StudyCycleProgress } from "./domain/studyCycles";
+import { reconcileGeneralStudyCycle, recordGeneralStudyTime, type GeneralStudyCycleProgress } from "./domain/generalStudyCycle";
 
 type Section = "Início" | "Estudar" | "Disciplinas" | "Ciclo" | "Revisões" | "Evolução" | "Assuntos" | "Cadernos" | "Configurações" | "Plano de Estudos" | "Flashcards" | "Histórico" | "Pré-requisitos" | "Diagnóstico" | "Relatórios";
 type Row = { id:string; name:string; createdAt:string; updatedAt:string; disciplineId?:string; description?:string; parentId?:string; cycleOrder?:number; recommendedMinutes?:number };
@@ -114,13 +115,14 @@ function Header({eyebrow,title,subtitle}:{eyebrow:string;title:string;subtitle:s
 }
 function Dashboard({disciplines,notebooks,sessions,blocks,flashcards,reviewLimit,onGo}:{disciplines:Row[];notebooks:Row[];sessions:Session[];blocks:StudyBlock[];flashcards:Flashcard[];reviewLimit:number;onGo:(s:Section)=>void}){
  const [cycles,setCycles]=useState<Record<string,StudyCycleProgress>>({});
+ const [generalCycle,setGeneralCycle]=useState<GeneralStudyCycleProgress>();
  const [completedPasses,setCompletedPasses]=useState(0);
- useEffect(()=>{let alive=true;void Promise.all(disciplines.map(async d=>[d.id,await settingsRepository.get("studyCycle:"+d.id)] as const)).then(entries=>{if(!alive)return;const next:Record<string,StudyCycleProgress>={};for(const [id,value] of entries){if(value&&typeof value==="object")next[id]=value as StudyCycleProgress;}setCycles(next);setCompletedPasses(Object.values(next).reduce((sum,x)=>sum+x.completedPasses,0));});return()=>{alive=false;};},[disciplines,notebooks]);
+ useEffect(()=>{let alive=true;void Promise.all(disciplines.map(async d=>[d.id,await settingsRepository.get("studyCycle:"+d.id)] as const)).then(entries=>{if(!alive)return;const next:Record<string,StudyCycleProgress>={};for(const [id,value] of entries){if(value&&typeof value==="object")next[id]=value as StudyCycleProgress;}setCycles(next);setCompletedPasses(Object.values(next).reduce((sum,x)=>sum+x.completedPasses,0));void settingsRepository.get("generalStudyCycle").then(value=>{if(alive)setGeneralCycle(reconcileGeneralStudyCycle(value&&typeof value==="object"?value as GeneralStudyCycleProgress:undefined,disciplines.filter(d=>notebooks.some(n=>n.disciplineId===d.id)).map(d=>d.id)));});});return()=>{alive=false;};},[disciplines,notebooks]);
  const total=sessions.reduce((a,s)=>a+s.durationSeconds,0);
  const activeBlock=blocks.find(b=>b.status==="paused"||b.status==="in_progress");
  const dueCards=selectDailyReviewQueue(flashcards,new Date(),reviewLimit).length;
  const activeNotebook=activeBlock?notebooks.find(n=>n.id===activeBlock.notebookId):undefined;
- const nextDiscipline=disciplines.find(d=>notebooks.some(n=>n.disciplineId===d.id));
+ const nextDiscipline=disciplines.find(d=>d.id===generalCycle?.currentDisciplineId)??disciplines.find(d=>notebooks.some(n=>n.disciplineId===d.id));
  const targetDiscipline=activeBlock?disciplines.find(d=>d.id===activeBlock.disciplineId):nextDiscipline;
  const cycle=targetDiscipline?cycles[targetDiscipline.id]:undefined;
  const ordered=notebooks.filter(n=>n.disciplineId===targetDiscipline?.id).sort((a,b)=>(a.cycleOrder??0)-(b.cycleOrder??0)||a.createdAt.localeCompare(b.createdAt));
@@ -130,7 +132,7 @@ function Dashboard({disciplines,notebooks,sessions,blocks,flashcards,reviewLimit
   <div className="panel"><div className="panel-heading"><div><span className="eyebrow">PRÓXIMO ESTUDO</span><h2>{activeBlock?"Continue de onde parou":"Seu próximo caderno"}</h2></div><Compass/></div>
    <h3 className="recommend-title">{targetDiscipline?.name??"Comece cadastrando uma disciplina"}</h3>
    <p className="muted-copy">{nextNotebook?.name??"Adicione cadernos à sua disciplina para montar o ciclo."}</p>
-   {cycle&&<p className="muted-copy">Passada {cycle.completedPasses+1} · Progresso do ciclo: {getCycleProgressPercent(cycle)}% · Tempo previsto: 15 minutos</p>}
+   {cycle&&<p className="muted-copy">Passada {cycle.completedPasses+1} · Progresso do ciclo: {getCycleProgressPercent(cycle)}% · Tempo recomendado: {targetDiscipline?.recommendedMinutes??60} min</p>}
    <button className="button primary" onClick={()=>onGo("Estudar")} disabled={!nextNotebook}>{activeBlock?"Retomar estudo":"Iniciar estudo"} <ArrowRight size={16}/></button>
   </div>
   <div className="panel"><div className="panel-heading"><div><span className="eyebrow">REVISÕES DO DIA</span><h2>{dueCards} flashcards pendentes</h2></div><Brain/></div><p className="muted-copy">As revisões ficam fora do ciclo de cadernos e têm uma fila própria.</p><button className="button secondary" onClick={()=>onGo("Revisões")}>Iniciar revisões <ArrowRight size={16}/></button></div>
@@ -204,7 +206,9 @@ function StudyPage({disciplines,notebooks,subjects,notebookSubjects,dependencies
  const [block,setBlock]=useState<StudyBlock|undefined>(paused?{...paused,status:"paused"}:undefined);
  const [cycleProgress,setCycleProgress]=useState<StudyCycleProgress>();
  const [cycleReady,setCycleReady]=useState(false);
+ const [generalCycle,setGeneralCycle]=useState<GeneralStudyCycleProgress>();
  useEffect(()=>{if(paused?.status==="in_progress"){void studyBlockRepository.save({...paused,status:"paused",updatedAt:nowIso()});}},[]);
+ useEffect(()=>{let alive=true;const ids=disciplines.filter(d=>notebooks.some(n=>n.disciplineId===d.id)).map(d=>d.id);void settingsRepository.get("generalStudyCycle").then(value=>{if(!alive)return;const state=reconcileGeneralStudyCycle(value&&typeof value==="object"?value as GeneralStudyCycleProgress:undefined,ids);if(paused?.disciplineId&&ids.includes(paused.disciplineId))state.currentDisciplineId=paused.disciplineId;setGeneralCycle(state);if(state.currentDisciplineId)setDisciplineId(paused?.disciplineId??state.currentDisciplineId);void settingsRepository.set("generalStudyCycle",state);});return()=>{alive=false;};},[disciplines,notebooks]);
  useEffect(()=>{let alive=true;void settingsRepository.get("activeStudySession").then(value=>{if(!alive||!value||typeof value!=="object")return;const draft=value as StudySessionDraft;setDisciplineId(draft.disciplineId||disciplineId);setSessionElapsed(Number(draft.sessionElapsed)||0);if(Array.isArray(draft.segments))setSegments(draft.segments.map((x:any)=>({key:x.key??makeId(),notebookId:x.notebookId??"",questions:String(x.questions??"0"),correct:String(x.correct??"0"),difficulties:Array.isArray(x.difficulties)?x.difficulties:[]})));if(Array.isArray(draft.visitedNotebookIds))setVisitedNotebookIds(draft.visitedNotebookIds);if(draft.startedAt)setSessionStartedAt(draft.startedAt);});return()=>{alive=false;};},[]);
  useEffect(()=>{sessionDraftRef.current=sessionElapsed>0?{disciplineId,sessionElapsed,segments,visitedNotebookIds,startedAt:sessionStartedAt??nowIso()}:null;},[disciplineId,sessionElapsed,segments,visitedNotebookIds,sessionStartedAt]);
  useEffect(()=>{const timer=window.setInterval(()=>{const draft=sessionDraftRef.current;if(draft)void settingsRepository.set("activeStudySession",draft);},5000);return()=>window.clearInterval(timer);},[]);
@@ -250,7 +254,12 @@ function StudyPage({disciplines,notebooks,subjects,notebookSubjects,dependencies
   const step=completeCycleNotebook(currentProgress,now);
   setCycleProgress(step.progress);await settingsRepository.set("studyCycle:"+disciplineId,step.progress);
   const next=eligibleNotebooks.find(n=>n.id===step.nextNotebookId);
+  const generalBase=generalCycle??reconcileGeneralStudyCycle(undefined,disciplines.filter(d=>notebooks.some(n=>n.disciplineId===d.id)).map(d=>d.id),now);
+  const timeByDiscipline=Object.fromEntries(disciplines.map(d=>[d.id,d.recommendedMinutes??60]));
+  const generalNext=recordGeneralStudyTime(generalBase,disciplineId,manual?elapsed:STUDY_BLOCK_SECONDS,timeByDiscipline,now);
+  setGeneralCycle(generalNext);await settingsRepository.set("generalStudyCycle",generalNext);
   setNotebookId(next?.id??block.notebookId);setBlock(undefined);setElapsed(0);setQuestion("");setRunning(false);
+  if(generalNext.currentDisciplineId&&generalNext.currentDisciplineId!==disciplineId){setDisciplineId(generalNext.currentDisciplineId);setNotebookId("");setMessage("Tempo planejado desta matéria alcançado. Próxima matéria: "+(disciplines.find(d=>d.id===generalNext.currentDisciplineId)?.name??"próxima disciplina")+". A posição de cada ciclo foi preservada.");reload();return;}
   setMessage(step.completedPass?"Passada "+step.progress.completedPasses+" concluída. Você voltou ao primeiro caderno.":manual?"Caderno encerrado. O tempo parcial foi registrado e a sequência avançou. Próximo: "+(next?.name??"caderno indisponível")+".":"Bloco de 15 minutos concluído. Próximo caderno: "+(next?.name??"nenhum disponível")+".");
   reload();
  }
