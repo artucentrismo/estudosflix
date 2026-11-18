@@ -14,6 +14,8 @@ export type StudyBlock = {
   disciplineId: string;
   notebookId: string;
   elapsedSeconds: number;
+  /** Study time already credited to the general subject allocation. */
+  generalCreditedSeconds?: number;
   lastQuestionId?: string;
   lastQuestionNumber?: number;
   status: StudyBlockStatus;
