@@ -7,7 +7,9 @@ export const MAX_CONSECUTIVE_CORRECT = 5;
 export const ARCHIVE_RESPONSE_TIME_MS = 5000;
 
 export type Flashcard = BaseRecord & {
-  subjectId: string;
+  notebookId?: string;
+  /** Legacy origin retained for cards created before notebook ownership. */
+  subjectId?: string;
   front: string;
   back: string;
   level: number;
