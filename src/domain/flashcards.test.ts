@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculateFlashcardPriority, reviewFlashcard, selectDailyReviewQueue, type Flashcard } from "./flashcards";
+import { calculateFlashcardPriority, reactivateFlashcard, reviewFlashcard, selectDailyReviewQueue, type Flashcard } from "./flashcards";
 
 const card: Flashcard = {
   id: "card-1", createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:00:00.000Z",
@@ -25,7 +25,7 @@ describe("flashcards REE", () => {
     for (let i=0;i<5;i++) current = reviewFlashcard(current, true, 1000, `2026-01-0${i+1}T00:00:00.000Z`).card;
     expect(current.archived).toBe(true);
   });
-  it("seleciona apenas cards vencidos e respeita limite diário", () => {
+  it("reactivates an archived card and increments its reactivation history", () => {\n    const archived = { ...card, archived: true, everArchived: true, reactivationCount: 1 };\n    const result = reactivateFlashcard(archived, "2026-02-01T00:00:00.000Z");\n    expect(result.archived).toBe(false);\n    expect(result.reactivationCount).toBe(2);\n    expect(result.level).toBe(0);\n    expect(result.nextReviewAt).toBe("2026-02-01T00:00:00.000Z");\n  });\n\n  it("seleciona apenas cards vencidos e respeita limite diário", () => {
     const due = {...card, id:"due"};
     const future = {...card, id:"future", nextReviewAt:"2027-01-01T00:00:00.000Z"};
     expect(selectDailyReviewQueue([due,future], new Date("2026-01-02T00:00:00.000Z"), 1).map(x=>x.id)).toEqual(["due"]);
