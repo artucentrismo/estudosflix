@@ -186,6 +186,29 @@ export function createTimestamps() {
   return { createdAt: now, updatedAt: now };
 }
 
+export type DatabaseImportData = Partial<Record<StoreName, Array<BaseRecord | SettingRecord>>>;
+
+/** Grava um backup inteiro em uma única transação; em caso de falha, nada é confirmado. */
+export async function importRecordsAtomically(data: DatabaseImportData): Promise<void> {
+  const names = Object.keys(data).filter(name => STORE_NAMES.includes(name as StoreName)) as StoreName[];
+  if (names.length === 0) return;
+  const db = await openDatabase();
+  const transaction = db.transaction(names, "readwrite");
+  const completed = transactionDone(transaction);
+  try {
+    for (const name of names) {
+      const records = data[name] ?? [];
+      const store = transaction.objectStore(name);
+      for (const record of records) store.put(record);
+    }
+    await completed;
+  } catch (error) {
+    try { transaction.abort(); } catch { /* transação já encerrada */ }
+    await completed.catch(() => undefined);
+    throw error;
+  }
+}
+
 export async function closeDatabaseForTests(): Promise<void> {
   if (!databasePromise) return;
   const db = await databasePromise.catch(() => undefined);
