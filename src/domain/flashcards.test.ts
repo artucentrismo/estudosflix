@@ -23,7 +23,7 @@ describe("flashcards REE", () => {
   it("arquiva após cinco acertos consecutivos com média abaixo de cinco segundos", () => {
     let current = card;
     for (let i=0;i<5;i++) current = reviewFlashcard(current, true, 1000, `2026-01-0${i+1}T00:00:00.000Z`).card;
-    expect(current.archived).toBe(true);
+    expect(current.archived).toBe(true);\n    expect(current.everArchived).toBe(true);\n    expect(current.archivedAt).toBeDefined();
   });
   it("reactivates an archived card and increments its reactivation history", () => {\n    const archived = { ...card, archived: true, everArchived: true, reactivationCount: 1 };\n    const result = reactivateFlashcard(archived, "2026-02-01T00:00:00.000Z");\n    expect(result.archived).toBe(false);\n    expect(result.reactivationCount).toBe(2);\n    expect(result.level).toBe(0);\n    expect(result.nextReviewAt).toBe("2026-02-01T00:00:00.000Z");\n  });\n\n  it("seleciona apenas cards vencidos e respeita limite diário", () => {
     const due = {...card, id:"due"};
