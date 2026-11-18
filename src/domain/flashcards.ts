@@ -17,6 +17,8 @@ export type Flashcard = BaseRecord & {
   lastReviewedAt?: string;
   nextReviewAt: string;
   archived: boolean;
+  recentResults?: boolean[];
+  lastCorrectAt?: string;
 };
 
 export type FlashcardReview = BaseRecord & {
@@ -38,6 +40,7 @@ export function reviewFlashcard(
   const responseTimeTotalMs = card.responseTimeTotalMs + safeTime;
   const responseTimeCount = card.responseTimeCount + 1;
   const averageResponseTime = responseTimeTotalMs / responseTimeCount;
+  const recentResults = [...(card.recentResults ?? []), remembered].slice(-30);
   const archived = remembered && consecutiveCorrect >= MAX_CONSECUTIVE_CORRECT &&
     averageResponseTime < ARCHIVE_RESPONSE_TIME_MS;
   const intervalDays = REE_INTERVAL_DAYS[level];
@@ -53,6 +56,8 @@ export function reviewFlashcard(
     lastReviewedAt: reviewedAt,
     nextReviewAt: nextReview.toISOString(),
     archived: card.archived || archived,
+    recentResults,
+    ...(remembered ? { lastCorrectAt: reviewedAt } : {}),
     updatedAt: reviewedAt,
   };
   const review: FlashcardReview = {
@@ -67,6 +72,19 @@ export function reviewFlashcard(
   return { card: updatedCard, review };
 }
 
+export function calculateFlashcardPriority(card: Flashcard, now = new Date()): number {
+  const results = card.recentResults ?? [];
+  const recurrence = results.length ? (results.filter(result => !result).length / results.length) * 100 : 0;
+  const interval = REE_INTERVAL_DAYS[Math.min(5, Math.max(0, card.level))];
+  const daysLate = Math.max(0, (now.getTime() - new Date(card.nextReviewAt).getTime()) / 86400000);
+  const overdue = Math.min(100, (daysLate / Math.max(1, interval)) * 100);
+  const daysSinceSuccess = card.lastCorrectAt
+    ? Math.max(0, (now.getTime() - new Date(card.lastCorrectAt).getTime()) / 86400000)
+    : 15;
+  const forgetting = 100 * (1 - Math.exp(-daysSinceSuccess / 15));
+  return 0.5 * recurrence + 0.3 * overdue + 0.2 * forgetting;
+}
+
 export function selectDailyReviewQueue(
   cards: Flashcard[],
   now = new Date(),
@@ -75,10 +93,6 @@ export function selectDailyReviewQueue(
   const timestamp = now.getTime();
   return cards
     .filter(card => !card.archived && new Date(card.nextReviewAt).getTime() <= timestamp)
-    .sort((a, b) => {
-      const aDue = new Date(a.nextReviewAt).getTime();
-      const bDue = new Date(b.nextReviewAt).getTime();
-      return aDue - bDue || a.level - b.level || a.createdAt.localeCompare(b.createdAt);
-    })
+    .sort((a, b) => calculateFlashcardPriority(b, now) - calculateFlashcardPriority(a, now) || new Date(a.nextReviewAt).getTime() - new Date(b.nextReviewAt).getTime())
     .slice(0, Math.max(0, Math.min(limit, DEFAULT_DAILY_REVIEW_LIMIT)));
 }
