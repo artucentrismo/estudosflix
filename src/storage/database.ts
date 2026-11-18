@@ -1,5 +1,5 @@
 export const DATABASE_NAME = "estudosflix-local";
-export const DATABASE_VERSION = 1;
+export const DATABASE_VERSION = 2;
 
 export const STORE_NAMES = [
   "disciplines",
@@ -10,6 +10,7 @@ export const STORE_NAMES = [
   "notebooks",
   "notebookSubjects",
   "sessions",
+  "studyBlocks",
   "sessionSegments",
   "flashcardConcepts",
   "flashcards",
@@ -75,6 +76,16 @@ function openDatabase(): Promise<IDBDatabase> {
         }
         if (segments && !segments.indexNames.contains("subjectId")) {
           segments.createIndex("subjectId", "subjectId", { unique: false });
+        }
+        const blocks = request.transaction?.objectStore("studyBlocks");
+        if (blocks && !blocks.indexNames.contains("disciplineId")) {
+          blocks.createIndex("disciplineId", "disciplineId", { unique: false });
+        }
+        if (blocks && !blocks.indexNames.contains("notebookId")) {
+          blocks.createIndex("notebookId", "notebookId", { unique: false });
+        }
+        if (blocks && !blocks.indexNames.contains("status")) {
+          blocks.createIndex("status", "status", { unique: false });
         }
         const cards = request.transaction?.objectStore("flashcards");
         if (cards && !cards.indexNames.contains("nextReviewAt")) {
