@@ -274,6 +274,8 @@ function StudyPage({disciplines,notebooks,notebookSubjects,dependencies,sessionS
  async function endNotebookEarly(){if(!block||elapsed<=0)return;if(!confirm("Encerrar este caderno agora e avançar? O tempo estudado será registrado, mas o bloco ficará marcado como encerrado antes dos 15 minutos."))return;await advanceFromNotebook(true);}
  async function finishSession(){
   if(sessionElapsed===0)return;
+  const missingFlashcard=segments.some(segment=>segment.notebookId&&Number(segment.questions)>0&&segment.difficulties.some(value=>["Acertei no chute","Acertei com dúvida","Errei"].includes(value))&&(!segment.flashcardFront?.trim()||!segment.flashcardBack?.trim()));
+  if(missingFlashcard){setMessage("Para erro, chute ou dúvida, preencha a pergunta e a resposta do flashcard antes de finalizar a sessão.");return;}
   setSaving(true);
   try{
    setRunning(false);
