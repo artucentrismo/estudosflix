@@ -1,45 +1,47 @@
 import { describe, expect, it } from "vitest";
-import {
-  completeCycleNotebook,
-  createStudyCycleProgress,
-  getCycleProgressPercent,
-  reconcileStudyCycle,
-} from "./studyCycles";
+import { completeCycleNotebook, createStudyCycleProgress, getCycleProgressPercent, reconcileStudyCycle } from "./studyCycles";
 
 describe("study cycles", () => {
-  it("does not complete a full pass after one 15-minute notebook block", () => {
-    const progress = createStudyCycleProgress("law", ["a", "b", "c", "d"]);
-    const step = completeCycleNotebook(progress, "2026-11-18T12:00:00.000Z");
-    expect(step.completedPass).toBe(false);
-    expect(step.progress.completedPasses).toBe(0);
-    expect(step.nextNotebookId).toBe("b");
-    expect(step.progressPercent).toBe(25);
-  });
-
-  it("completes a pass only after every notebook in the cycle", () => {
+  it("completes a pass after every active notebook is visited, regardless of visit duration", () => {
     let progress = createStudyCycleProgress("law", ["a", "b", "c", "d"]);
-    for (let i = 0; i < 3; i += 1) {
-      const step = completeCycleNotebook(progress);
-      expect(step.completedPass).toBe(false);
-      progress = step.progress;
+    for (const id of ["a", "b", "c"]) {
+      expect(progress.notebookIds[progress.currentNotebookIndex]).toBe(id);
+      progress = completeCycleNotebook(progress).progress;
     }
     const last = completeCycleNotebook(progress);
     expect(last.completedPass).toBe(true);
     expect(last.progress.completedPasses).toBe(1);
-    expect(last.progress.currentNotebookIndex).toBe(0);
+    expect(last.progress.visitedNotebookIds).toEqual([]);
     expect(last.nextNotebookId).toBe("a");
     expect(getCycleProgressPercent(last.progress)).toBe(0);
   });
 
-  it("keeps the current notebook when the cycle is reconciled", () => {
-    const progress = { ...createStudyCycleProgress("law", ["a", "b", "c"]), currentNotebookIndex: 1 };
-    const reconciled = reconcileStudyCycle(progress, "law", ["a", "b", "c", "d"]);
+  it("does not count a paused partial visit unless completion is explicitly recorded", () => {
+    const progress = createStudyCycleProgress("law", ["a", "b"]);
+    expect(progress.visitedNotebookIds).toEqual([]);
+    expect(progress.completedPasses).toBe(0);
+  });
+
+  it("preserves visit history by permanent notebook ID when order changes", () => {
+    const progress = { ...createStudyCycleProgress("law", ["a", "b", "c"]), visitedNotebookIds: ["a"], currentNotebookIndex: 1 };
+    const reconciled = reconcileStudyCycle(progress, "law", ["c", "a", "b"]);
+    expect(reconciled.visitedNotebookIds).toEqual(["a"]);
     expect(reconciled.notebookIds[reconciled.currentNotebookIndex]).toBe("b");
   });
 
-  it("moves to the nearest valid index when the current notebook was removed", () => {
-    const progress = { ...createStudyCycleProgress("law", ["a", "b", "c"]), currentNotebookIndex: 2 };
+  it("removes deleted notebooks from the current pass and preserves remaining visits", () => {
+    const progress = { ...createStudyCycleProgress("law", ["a", "b", "c"]), visitedNotebookIds: ["a", "c"], currentNotebookIndex: 1 };
     const reconciled = reconcileStudyCycle(progress, "law", ["a", "b"]);
-    expect(reconciled.currentNotebookIndex).toBe(1);
+    expect(reconciled.visitedNotebookIds).toEqual(["a"]);
+    const last = completeCycleNotebook(reconciled);
+    expect(last.completedPass).toBe(true);
+  });
+
+  it("starts a new pass after the final eligible notebook", () => {
+    let progress = createStudyCycleProgress("law", ["a"]);
+    const step = completeCycleNotebook(progress);
+    expect(step.completedPass).toBe(true);
+    expect(step.progress.completedPasses).toBe(1);
+    expect(step.nextNotebookId).toBe("a");
   });
 });
