@@ -90,7 +90,7 @@ export function completeCycleNotebook(
   if (!completedPass) {
     for (let offset = 1; offset <= ids.length; offset += 1) {
       const candidate = (currentIndex + offset) % ids.length;
-      if (!nextVisited.has(ids[candidate])) {
+      if (!nextVisited.includes(ids[candidate])) {
         nextIndex = candidate;
         break;
       }
