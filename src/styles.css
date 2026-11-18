@@ -48,3 +48,30 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--primary); outli
 @media (display-mode: standalone) {
   .topbar { padding-top: env(safe-area-inset-top); }
 }
+
+/* Componentes funcionais de cadastro, estudo e histórico */
+.muted-copy{color:var(--muted);font-size:11px;line-height:1.65;margin:14px 0}
+.form-panel{display:flex;flex-direction:column;gap:13px}
+.form-panel h2,.panel>h2{font:700 15px system-ui;color:var(--title);margin:0 0 5px}
+.form-panel h3{font:700 12px system-ui;color:var(--title);margin:0}
+.form-panel label{display:flex;flex-direction:column;gap:6px;color:var(--text);font-size:10px;font-weight:700}
+.form-panel input,.form-panel select,.form-panel textarea{width:100%;border:1px solid var(--border);background:var(--bg);color:var(--text);border-radius:8px;padding:10px 11px;font:400 12px system-ui;min-height:39px}
+.form-panel textarea{min-height:75px;resize:vertical}
+.form-panel input:focus,.form-panel select:focus,.form-panel textarea:focus{outline:2px solid var(--primary);outline-offset:1px}
+.form-panel button:disabled{opacity:.5;cursor:not-allowed}
+.error-text{color:var(--red);font-size:11px}
+.success-copy{color:var(--green);font-size:11px;font-weight:700}
+.danger{color:var(--red)}
+.blue-dot{background:var(--primary)}
+.timer-panel{display:flex;flex-direction:column;justify-content:center;min-height:320px}
+.timer-display{font:800 clamp(42px,7vw,64px) ui-monospace,monospace;letter-spacing:-3px;text-align:center;color:var(--title);margin:35px 0 17px}
+.timer-display small{font:600 16px system-ui;color:var(--muted);letter-spacing:0}
+.timer-bar{height:9px;margin:0 8px}
+.timer-caption{display:flex;justify-content:space-between;color:var(--muted);font-size:10px;margin:9px 8px 20px}
+.timer-actions{display:flex;gap:9px;justify-content:center;flex-wrap:wrap}
+.timer-actions .button{min-height:42px}
+.two-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.small-copy{font-size:9px;margin:0}
+.file-button{position:relative;overflow:hidden;cursor:pointer}
+.file-button input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+@media(max-width:760px){.timer-panel{min-height:280px}.timer-actions{flex-direction:column}.timer-actions .button{width:100%}}
