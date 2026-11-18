@@ -17,7 +17,7 @@ import {
   getStudyBlockProgress, pauseStudyBlock, resumeStudyBlock, type StudyBlock
 } from "./domain/studyBlocks";
 
-type Section = "Painel" | "Estudar" | "Plano de Estudos" | "Disciplinas" | "Assuntos" | "Cadernos" | "Flashcards" | "Histórico" | "Pré-requisitos" | "Diagnóstico" | "Relatórios" | "Configurações";
+type Section = "Início" | "Estudar" | "Disciplinas" | "Revisões" | "Evolução" | "Assuntos" | "Cadernos" | "Configurações" | "Plano de Estudos" | "Flashcards" | "Histórico" | "Pré-requisitos" | "Diagnóstico" | "Relatórios";
 type Row = { id:string; name:string; createdAt:string; updatedAt:string; disciplineId?:string; description?:string; parentId?:string };
 type Session = { id:string; createdAt:string; updatedAt:string; disciplineId:string; notebookId?:string; notebookIds?:string[]; durationSeconds:number; questions:number; correct:number; date:string };
 type StudySessionDraft = { disciplineId:string; sessionElapsed:number; segments:SegmentDraft[]; visitedNotebookIds:string[]; startedAt:string };
@@ -29,9 +29,10 @@ type PlanRecord = { id:string; createdAt:string; updatedAt:string; name:string }
 type PlanItemRecord = { id:string; createdAt:string; updatedAt:string; planId:string; disciplineId:string; minutes:number; blockCount:number };
 
 const sections: {name:Section; icon:typeof LayoutDashboard}[] = [
-  {name:"Painel",icon:LayoutDashboard},{name:"Estudar",icon:BookOpen},
-  {name:"Plano de Estudos",icon:CalendarDays},{name:"Disciplinas",icon:GraduationCap},{name:"Assuntos",icon:Target},{name:"Cadernos",icon:Library},{name:"Flashcards",icon:Brain},
-  {name:"Histórico",icon:TrendingUp},{name:"Pré-requisitos",icon:Target},{name:"Diagnóstico",icon:Activity},{name:"Relatórios",icon:TrendingUp},{name:"Configurações",icon:Settings2}
+  {name:"Início",icon:LayoutDashboard},
+  {name:"Disciplinas",icon:GraduationCap},
+  {name:"Revisões",icon:Brain},
+  {name:"Evolução",icon:TrendingUp}
 ];
 
 const nowIso=()=>new Date().toISOString();
@@ -39,7 +40,7 @@ const makeId=()=>crypto.randomUUID?.() ?? `id-${Date.now()}-${Math.random()}`;
 const fmt=(s:number)=>`${String(Math.floor(s/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;
 
 export default function App(){
-  const [section,setSection]=useState<Section>("Painel");
+  const [section,setSection]=useState<Section>("Início");
   const [dark,setDark]=useState(false);
   const [disciplines,setDisciplines]=useState<Row[]>([]);
   const [notebooks,setNotebooks]=useState<Row[]>([]);
@@ -80,25 +81,25 @@ export default function App(){
       <div className="brand"><div className="brand-mark"><GraduationCap size={21}/></div><div><strong>EstudosFlix</strong><small>MÉTODO KYRLA / TATA</small></div></div>
       <div className="profile-switch"><div className="avatar">E</div><div className="profile-copy"><strong>Meu espaço</strong><small>Dados locais</small></div></div>
       <nav className="navigation">{sections.map(item=>{const Icon=item.icon;return <button key={item.name} className={section===item.name?"nav-item active":"nav-item"} onClick={()=>setSection(item.name)}><Icon size={17}/><span>{item.name}</span></button>;})}</nav>
-      <div className="sidebar-bottom"><div className="offline"><span/> Armazenamento local</div><button className="theme-toggle" onClick={()=>setDark(v=>!v)}>{dark?<Sun size={16}/>:<Moon size={16}/>} {dark?"Tema claro":"Tema escuro"}</button><small className="version">EstudosFlix · versão em construção</small></div>
+      <div className="sidebar-bottom"><div className="offline"><span/> Armazenamento local</div><button className="theme-toggle" onClick={()=>setDark(v=>!v)}>{dark?<Sun size={16}/>:<Moon size={16}/>} {dark?"Tema claro":"Tema escuro"}</button><button className="theme-toggle" onClick={()=>setSection("Configurações")}><Settings2 size={16}/> Configurações</button><small className="version">EstudosFlix · ciclo de estudos</small></div>
     </aside>
     <main className="main-area">
       <header className="topbar"><div className="breadcrumbs"><span>EstudosFlix</span><b>/</b><strong>{title}</strong></div><span className="local-pill"><Check size={14}/> Dados neste dispositivo</span></header>
       <div className="page-content">
         {error&&<div className="demo-notice" role="alert">{error}</div>}
         {loading?<div className="panel"><p>Carregando seus dados locais…</p></div>:null}
-        {!loading&&section==="Painel"&&<Dashboard disciplines={disciplines} notebooks={notebooks} sessions={sessions} blocks={blocks} flashcards={flashcards} reviewLimit={reviewLimit} onGo={setSection}/>}
+        {!loading&&section==="Início"&&<Dashboard disciplines={disciplines} notebooks={notebooks} sessions={sessions} blocks={blocks} flashcards={flashcards} reviewLimit={reviewLimit} onGo={setSection}/>}
         {!loading&&section==="Estudar"&&<StudyPage disciplines={disciplines} notebooks={notebooks} subjects={subjects} notebookSubjects={notebookSubjects} dependencies={dependencies} sessionSegments={sessionSegments} blocks={blocks} reload={()=>setRefresh(x=>x+1)}/>}
         {!loading&&section==="Plano de Estudos"&&<PlanPage disciplines={disciplines} plans={plans} items={planItems} reload={()=>setRefresh(x=>x+1)}/>}
-        {!loading&&section==="Disciplinas"&&<DisciplinePage disciplines={disciplines} reload={()=>setRefresh(x=>x+1)}/>}
+        {!loading&&section==="Disciplinas"&&<><DisciplinePage disciplines={disciplines} reload={()=>setRefresh(x=>x+1)}/><NotebookPage disciplines={disciplines} subjects={subjects} notebooks={notebooks} mappings={notebookSubjects} reload={()=>setRefresh(x=>x+1)}/></>}
+        
         {!loading&&section==="Assuntos"&&<SubjectPage disciplines={disciplines} subjects={subjects} reload={()=>setRefresh(x=>x+1)}/>}
-        {!loading&&section==="Assuntos"&&<SubjectPage disciplines={disciplines} subjects={subjects} reload={()=>setRefresh(x=>x+1)}/>}
-        {!loading&&section==="Cadernos"&&<NotebookPage disciplines={disciplines} subjects={subjects} notebooks={notebooks} mappings={notebookSubjects} reload={()=>setRefresh(x=>x+1)}/>}
-        {!loading&&section==="Flashcards"&&<FlashcardsPage disciplines={disciplines} subjects={subjects} cards={flashcards} limit={reviewLimit} reload={()=>setRefresh(x=>x+1)}/>}
-        {!loading&&section==="Histórico"&&<HistoryPage sessions={sessions} disciplines={disciplines} notebooks={notebooks}/>}
-        {!loading&&section==="Pré-requisitos"&&<DependenciesPage subjects={subjects} dependencies={dependencies} reload={()=>setRefresh(x=>x+1)}/>}
-        {!loading&&section==="Diagnóstico"&&<AnalysisPage subjects={subjects} segments={sessionSegments} dependencies={dependencies} mode="diagnosis"/>}
-        {!loading&&section==="Relatórios"&&<AnalysisPage subjects={subjects} segments={sessionSegments} dependencies={dependencies} mode="reports"/>}
+        
+        {!loading&&section==="Revisões"&&<FlashcardsPage disciplines={disciplines} subjects={subjects} cards={flashcards} limit={reviewLimit} reload={()=>setRefresh(x=>x+1)}/>}
+        
+        
+        
+        {!loading&&section==="Evolução"&&<><AnalysisPage subjects={subjects} segments={sessionSegments} dependencies={dependencies} mode="reports"/><HistoryPage sessions={sessions} disciplines={disciplines} notebooks={notebooks}/></>}
         {!loading&&section==="Configurações"&&<SettingsPage dark={dark} setDark={setDark} reviewLimit={reviewLimit} setReviewLimit={setReviewLimit} reload={()=>setRefresh(x=>x+1)}/>}
       </div>
     </main>
@@ -122,10 +123,10 @@ function Dashboard({disciplines,notebooks,sessions,blocks,flashcards,reviewLimit
   <Metric icon={<Target/>} label="Passadas completas" value={String(passes)} detail="Blocos de 15 minutos"/>
  </div>
  <div className="content-grid">
-  <div className="panel"><div className="panel-heading"><div><span className="eyebrow">PRÓXIMA AÇÃO RECOMENDADA</span><h2>{activeBlock?"Retome seu bloco":dueCards>0?"Revisões prioritárias":"Continue sua trilha"}</h2></div><Compass/></div><h3 className="recommend-title">{activeBlock?activeNotebook?.name??"Caderno em andamento":dueCards>0?dueCards+" flashcards aguardando revisão":notebooks[0]?.name??"Cadastre seu primeiro caderno"}</h3><p className="muted-copy">{activeBlock?"Você tem um bloco interrompido. Continue do tempo e da questão em que parou.":dueCards>0?"Há revisões vencidas. Faça a fila diária antes de iniciar um novo assunto.":"Cada passada corresponde a 15 minutos líquidos em um caderno. A sequência será organizada pela sua trilha."}</p><button className="button primary" onClick={()=>onGo(activeBlock?"Estudar":dueCards>0?"Flashcards":"Estudar")}>{activeBlock?"Retomar estudo":dueCards>0?"Revisar flashcards":"Iniciar estudo"} <ArrowRight size={16}/></button></div>
-  <div className="panel"><div className="panel-heading"><div><span className="eyebrow">COMECE POR AQUI</span><h2>Monte sua estrutura</h2></div><Activity/></div><p className="muted-copy">Cadastre disciplinas e depois organize os cadernos que fazem parte de cada uma.</p><div className="recommend-actions"><button className="button secondary" onClick={()=>onGo("Disciplinas")}>Disciplinas</button><button className="button secondary" onClick={()=>onGo("Cadernos")}>Cadernos</button></div></div>
+  <div className="panel"><div className="panel-heading"><div><span className="eyebrow">PRÓXIMA AÇÃO RECOMENDADA</span><h2>{activeBlock?"Retome seu bloco":dueCards>0?"Revisões prioritárias":"Continue sua trilha"}</h2></div><Compass/></div><h3 className="recommend-title">{activeBlock?activeNotebook?.name??"Caderno em andamento":dueCards>0?dueCards+" flashcards aguardando revisão":notebooks[0]?.name??"Cadastre seu primeiro caderno"}</h3><p className="muted-copy">{activeBlock?"Você tem um bloco interrompido. Continue do tempo e da questão em que parou.":dueCards>0?"Há revisões vencidas. Faça a fila diária antes de iniciar um novo assunto.":"Cada passada corresponde a 15 minutos líquidos em um caderno. A sequência será organizada pela sua trilha."}</p><button className="button primary" onClick={()=>onGo(activeBlock?"Estudar":dueCards>0?"Revisões":"Estudar")}>{activeBlock?"Retomar estudo":dueCards>0?"Revisar flashcards":"Iniciar estudo"} <ArrowRight size={16}/></button></div>
+  <div className="panel"><div className="panel-heading"><div><span className="eyebrow">COMECE POR AQUI</span><h2>Monte sua estrutura</h2></div><Activity/></div><p className="muted-copy">Cadastre disciplinas e depois organize os cadernos que fazem parte de cada uma.</p><div className="recommend-actions"><button className="button secondary" onClick={()=>onGo("Disciplinas")}>Disciplinas</button><button className="button secondary" onClick={()=>onGo("Disciplinas")}>Cadernos</button></div></div>
  </div>
- <div className="panel"><div className="panel-heading"><div><span className="eyebrow">SEU PROGRESSO</span><h2>Atividade recente</h2></div><button className="text-button" onClick={()=>onGo("Histórico")}>Ver histórico <ArrowRight size={14}/></button></div>
+ <div className="panel"><div className="panel-heading"><div><span className="eyebrow">SEU PROGRESSO</span><h2>Atividade recente</h2></div><button className="text-button" onClick={()=>onGo("Evolução")}>Ver histórico <ArrowRight size={14}/></button></div>
  {sessions.length===0?<p className="muted-copy">Ainda não há sessões registradas. Quando concluir seu primeiro bloco, ele aparecerá aqui.</p>:sessions.slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5).map(s=><div className="diagnostic-row" key={s.id}><span className="diagnostic-dot green-dot"/><div><strong>{s.notebookIds&&s.notebookIds.length>1?"Vários cadernos":notebooks.find(n=>n.id===s.notebookId)?.name??"Caderno"}</strong><small>{new Date(s.date).toLocaleString("pt-BR")} · {fmt(s.durationSeconds)} · {s.questions} questões</small></div><b>{s.questions?Math.round(s.correct/s.questions*100)+"%":"—"}</b></div>)}</div>
  </>;
 }
