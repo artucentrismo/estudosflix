@@ -20,6 +20,9 @@ export type Flashcard = BaseRecord & {
   lastReviewedAt?: string;
   nextReviewAt: string;
   archived: boolean;
+  everArchived?: boolean;
+  archivedAt?: string;
+  reactivationCount?: number;
   recentResults?: boolean[];
   lastCorrectAt?: string;
 };
@@ -59,6 +62,8 @@ export function reviewFlashcard(
     lastReviewedAt: reviewedAt,
     nextReviewAt: nextReview.toISOString(),
     archived: card.archived || archived,
+    everArchived: card.everArchived || archived,
+    ...(archived && !card.archived ? { archivedAt: reviewedAt } : {}),
     recentResults,
     ...(remembered ? { lastCorrectAt: reviewedAt } : {}),
     updatedAt: reviewedAt,
