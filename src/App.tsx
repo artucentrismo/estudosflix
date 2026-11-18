@@ -9,23 +9,24 @@ import {
 } from "lucide-react";
 import {
   disciplineRepository, notebookRepository, sessionRepository, sessionSegmentRepository, studyBlockRepository,
-  subjectRepository, settingsRepository, flashcardRepository, flashcardReviewRepository
+  subjectRepository, subjectDependencyRepository, settingsRepository, flashcardRepository, flashcardReviewRepository
 } from "./storage/repositories";
 import {
   STUDY_BLOCK_SECONDS, addStudyTime, canAdvanceToNextNotebook,
   getStudyBlockProgress, pauseStudyBlock, resumeStudyBlock, type StudyBlock
 } from "./domain/studyBlocks";
 
-type Section = "Painel" | "Estudar" | "Disciplinas" | "Assuntos" | "Cadernos" | "Flashcards" | "Histórico" | "Diagnóstico" | "Relatórios" | "Configurações";
+type Section = "Painel" | "Estudar" | "Disciplinas" | "Assuntos" | "Cadernos" | "Flashcards" | "Histórico" | "Pré-requisitos" | "Diagnóstico" | "Relatórios" | "Configurações";
 type Row = { id:string; name:string; createdAt:string; updatedAt:string; disciplineId?:string; description?:string; parentId?:string };
 type Session = { id:string; createdAt:string; updatedAt:string; disciplineId:string; notebookId:string; durationSeconds:number; questions:number; correct:number; date:string };
 type SegmentDraft = { key:string; subjectId:string; questions:string; correct:string; difficulties:string[] };
 type SegmentRecord = { id:string; createdAt:string; updatedAt:string; sessionId:string; subjectId:string; questions:number; correct:number; difficulties:string[]; date:string };
+type DependencyRecord = { id:string; createdAt:string; updatedAt:string; prerequisiteSubjectId:string; dependentSubjectId:string; strength:"critical"|"strong"|"moderate"|"weak" };
 
 const sections: {name:Section; icon:typeof LayoutDashboard}[] = [
   {name:"Painel",icon:LayoutDashboard},{name:"Estudar",icon:BookOpen},
   {name:"Disciplinas",icon:GraduationCap},{name:"Assuntos",icon:Target},{name:"Cadernos",icon:Library},{name:"Flashcards",icon:Brain},
-  {name:"Histórico",icon:TrendingUp},{name:"Diagnóstico",icon:Activity},{name:"Relatórios",icon:TrendingUp},{name:"Configurações",icon:Settings2}
+  {name:"Histórico",icon:TrendingUp},{name:"Pré-requisitos",icon:Target},{name:"Diagnóstico",icon:Activity},{name:"Relatórios",icon:TrendingUp},{name:"Configurações",icon:Settings2}
 ];
 
 const nowIso=()=>new Date().toISOString();
@@ -42,6 +43,7 @@ export default function App(){
   const [blocks,setBlocks]=useState<StudyBlock[]>([]);
   const [flashcards,setFlashcards]=useState<Flashcard[]>([]);
   const [sessionSegments,setSessionSegments]=useState<SegmentRecord[]>([]);
+  const [dependencies,setDependencies]=useState<DependencyRecord[]>([]);
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState("");
   const [refresh,setRefresh]=useState(0);
@@ -50,12 +52,12 @@ export default function App(){
   const reload=useCallback(async()=>{
     if(!loadedRef.current)setLoading(true); setError("");
     try{
-      const [d,n,s,h,b,fc,sg,theme]=await Promise.all([
+      const [d,n,s,h,b,fc,sg,dp,theme]=await Promise.all([
         disciplineRepository.list(),notebookRepository.list(),subjectRepository.list(),
-        sessionRepository.list(),studyBlockRepository.list(),flashcardRepository.list(),sessionSegmentRepository.list(),settingsRepository.get("theme") as Promise<string | undefined>
+        sessionRepository.list(),studyBlockRepository.list(),flashcardRepository.list(),sessionSegmentRepository.list(),subjectDependencyRepository.list(),settingsRepository.get("theme") as Promise<string | undefined>
       ]);
       setDisciplines(d as Row[]); setNotebooks(n as Row[]); setSubjects(s as Row[]);
-      setSessions(h as Session[]); setBlocks(b); setFlashcards(fc as Flashcard[]); setSessionSegments(sg as SegmentRecord[]); setDark(theme==="dark");
+      setSessions(h as Session[]); setBlocks(b); setFlashcards(fc as Flashcard[]); setSessionSegments(sg as SegmentRecord[]); setDependencies(dp as DependencyRecord[]); setDark(theme==="dark");
     }catch(e){setError(e instanceof Error?e.message:"Não foi possível carregar os dados locais.");}
     finally{loadedRef.current=true;setLoading(false);}
   },[]);
@@ -84,8 +86,9 @@ export default function App(){
         {!loading&&section==="Cadernos"&&<NotebookPage disciplines={disciplines} notebooks={notebooks} reload={()=>setRefresh(x=>x+1)}/>}
         {!loading&&section==="Flashcards"&&<FlashcardsPage disciplines={disciplines} subjects={subjects} cards={flashcards} reload={()=>setRefresh(x=>x+1)}/>}
         {!loading&&section==="Histórico"&&<HistoryPage sessions={sessions} disciplines={disciplines} notebooks={notebooks}/>}
-        {!loading&&section==="Diagnóstico"&&<AnalysisPage subjects={subjects} segments={sessionSegments} mode="diagnosis"/>}
-        {!loading&&section==="Relatórios"&&<AnalysisPage subjects={subjects} segments={sessionSegments} mode="reports"/>}
+        {!loading&&section==="Pré-requisitos"&&<DependenciesPage subjects={subjects} dependencies={dependencies} reload={()=>setRefresh(x=>x+1)}/>}
+        {!loading&&section==="Diagnóstico"&&<AnalysisPage subjects={subjects} segments={sessionSegments} dependencies={dependencies} mode="diagnosis"/>}
+        {!loading&&section==="Relatórios"&&<AnalysisPage subjects={subjects} segments={sessionSegments} dependencies={dependencies} mode="reports"/>}
         {!loading&&section==="Configurações"&&<SettingsPage dark={dark} setDark={setDark} reload={()=>setRefresh(x=>x+1)}/>}
       </div>
     </main>
@@ -195,7 +198,14 @@ function StudyPage({disciplines,notebooks,subjects,blocks,reload}:{disciplines:R
  {block&&<div className="panel"><div className="panel-heading"><h2>Retomada preservada</h2><RotateCcw size={17}/></div><p className="muted-copy">Seu bloco permanece vinculado ao mesmo caderno. Se você parar agora, o sistema preserva {fmt(elapsed)} e faltam {fmt(progress.remainingSeconds)} para concluir a passada.</p>{canAdvanceToNextNotebook(block)&&<p className="success-copy">Próximo caderno sugerido: {nextNotebook?.name??"Cadastre outro caderno nesta disciplina"}.</p>}</div>}
  </>;
 }
-function AnalysisPage({subjects,segments,mode}:{subjects:Row[];segments:SegmentRecord[];mode:"diagnosis"|"reports"}){
+function DependenciesPage({subjects,dependencies,reload}:{subjects:Row[];dependencies:DependencyRecord[];reload:()=>void}){
+ const [prerequisiteSubjectId,setPrerequisiteSubjectId]=useState("");const [dependentSubjectId,setDependentSubjectId]=useState("");const [strength,setStrength]=useState<DependencyRecord["strength"]>("critical");const [message,setMessage]=useState("");
+ async function save(e:FormEvent){e.preventDefault();if(!prerequisiteSubjectId||!dependentSubjectId||prerequisiteSubjectId===dependentSubjectId){setMessage("Escolha dois assuntos diferentes.");return;}if(dependencies.some(d=>d.prerequisiteSubjectId===prerequisiteSubjectId&&d.dependentSubjectId===dependentSubjectId)){setMessage("Essa dependência já existe.");return;}await subjectDependencyRepository.save({prerequisiteSubjectId,dependentSubjectId,strength});setMessage("Pré-requisito cadastrado.");setPrerequisiteSubjectId("");setDependentSubjectId("");reload();}
+ async function remove(id:string){if(!confirm("Remover esta dependência?"))return;await subjectDependencyRepository.remove(id);reload();}
+ const name=(id:string)=>subjects.find(s=>s.id===id)?.name??"Assunto removido";
+ return <><Header eyebrow="PLANEJAMENTO" title="Pré-requisitos" subtitle="Defina quais assuntos precisam ser fortalecidos antes de avançar para outros conteúdos."/><div className="content-grid"><form className="panel form-panel" onSubmit={save}><h2>Nova dependência</h2><label>Assunto que é pré-requisito<select value={prerequisiteSubjectId} onChange={e=>setPrerequisiteSubjectId(e.target.value)} required><option value="">Selecione</option>{subjects.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></label><label>Assunto dependente<select value={dependentSubjectId} onChange={e=>setDependentSubjectId(e.target.value)} required><option value="">Selecione</option>{subjects.filter(s=>s.id!==prerequisiteSubjectId).map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></label><label>Intensidade da dependência<select value={strength} onChange={e=>setStrength(e.target.value as DependencyRecord["strength"])}><option value="critical">Crítica</option><option value="strong">Forte</option><option value="moderate">Moderada</option><option value="weak">Fraca</option></select></label><button className="button primary" disabled={subjects.length<2}><Plus size={16}/> Adicionar pré-requisito</button>{message&&<p className="muted-copy" role="status">{message}</p>}</form><div className="panel"><h2>Dependências cadastradas</h2>{dependencies.length===0?<p className="muted-copy">Nenhum pré-requisito definido.</p>:dependencies.map(d=><div className="diagnostic-row" key={d.id}><span className="diagnostic-dot amber-dot"/><div><strong>{name(d.prerequisiteSubjectId)} → {name(d.dependentSubjectId)}</strong><small>Intensidade: {d.strength==="critical"?"Crítica":d.strength==="strong"?"Forte":d.strength==="moderate"?"Moderada":"Fraca"}</small></div><button className="icon-button danger" onClick={()=>void remove(d.id)} aria-label="Remover dependência"><Trash2 size={16}/></button></div>)}</div></div></>;
+}
+function AnalysisPage({subjects,segments,dependencies,mode}:{subjects:Row[];segments:SegmentRecord[];dependencies:DependencyRecord[];mode:"diagnosis"|"reports"}){
  const results=subjects.map(subject=>{
   const rows=segments.filter(s=>s.subjectId===subject.id).sort((a,b)=>a.date.localeCompare(b.date));
   const attempts:Attempt[]=rows.map(s=>({questions:s.questions,correct:s.correct,date:s.date}));
