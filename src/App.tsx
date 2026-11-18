@@ -83,7 +83,7 @@ export default function App(){
       <div className="page-content">
         {error&&<div className="demo-notice" role="alert">{error}</div>}
         {loading?<div className="panel"><p>Carregando seus dados locais…</p></div>:null}
-        {!loading&&section==="Painel"&&<Dashboard disciplines={disciplines} notebooks={notebooks} sessions={sessions} onGo={setSection}/>}
+        {!loading&&section==="Painel"&&<Dashboard disciplines={disciplines} notebooks={notebooks} sessions={sessions} blocks={blocks} flashcards={flashcards} onGo={setSection}/>}
         {!loading&&section==="Estudar"&&<StudyPage disciplines={disciplines} notebooks={notebooks} subjects={subjects} blocks={blocks} reload={()=>setRefresh(x=>x+1)}/>}
         {!loading&&section==="Plano de Estudos"&&<PlanPage disciplines={disciplines} plans={plans} items={planItems} reload={()=>setRefresh(x=>x+1)}/>}
         {!loading&&section==="Disciplinas"&&<DisciplinePage disciplines={disciplines} reload={()=>setRefresh(x=>x+1)}/>}
@@ -104,9 +104,12 @@ export default function App(){
 function Header({eyebrow,title,subtitle}:{eyebrow:string;title:string;subtitle:string}){
  return <div className="welcome-row"><div><div className="eyebrow">{eyebrow}</div><h1>{title}</h1><p>{subtitle}</p></div></div>;
 }
-function Dashboard({disciplines,notebooks,sessions,onGo}:{disciplines:Row[];notebooks:Row[];sessions:Session[];onGo:(s:Section)=>void}){
+function Dashboard({disciplines,notebooks,sessions,blocks,flashcards,onGo}:{disciplines:Row[];notebooks:Row[];sessions:Session[];blocks:StudyBlock[];flashcards:Flashcard[];onGo:(s:Section)=>void}){
  const total=sessions.reduce((a,s)=>a+s.durationSeconds,0);
  const passes=sessions.reduce((a,s)=>a+Math.floor(s.durationSeconds/STUDY_BLOCK_SECONDS),0);
+ const activeBlock=blocks.find(b=>b.status==="paused"||b.status==="in_progress");
+ const dueCards=selectDailyReviewQueue(flashcards).length;
+ const activeNotebook=activeBlock?notebooks.find(n=>n.id===activeBlock.notebookId):undefined;
  return <><Header eyebrow="VISÃO GERAL" title="Seu espaço de estudos" subtitle="Organize suas passadas, acompanhe seu tempo e retome de onde parou."/>
  <div className="metric-grid">
   <Metric icon={<GraduationCap/>} label="Disciplinas" value={String(disciplines.length)} detail="Cadastradas"/>
@@ -115,7 +118,7 @@ function Dashboard({disciplines,notebooks,sessions,onGo}:{disciplines:Row[];note
   <Metric icon={<Target/>} label="Passadas completas" value={String(passes)} detail="Blocos de 15 minutos"/>
  </div>
  <div className="content-grid">
-  <div className="panel"><div className="panel-heading"><div><span className="eyebrow">PRÓXIMA AÇÃO</span><h2>Continue seu método</h2></div><BookOpen/></div><p className="muted-copy">Cada passada corresponde a 15 minutos líquidos em um caderno. Se precisar parar, seu tempo e sua posição ficam salvos.</p><button className="button primary" onClick={()=>onGo("Estudar")}>Ir para estudar <ArrowRight size={16}/></button></div>
+  <div className="panel"><div className="panel-heading"><div><span className="eyebrow">PRÓXIMA AÇÃO RECOMENDADA</span><h2>{activeBlock?"Retome seu bloco":dueCards>0?"Revisões prioritárias":"Continue sua trilha"}</h2></div><Compass/></div><h3 className="recommend-title">{activeBlock?activeNotebook?.name??"Caderno em andamento":dueCards>0?dueCards+" flashcards aguardando revisão":notebooks[0]?.name??"Cadastre seu primeiro caderno"}</h3><p className="muted-copy">{activeBlock?"Você tem um bloco interrompido. Continue do tempo e da questão em que parou.":dueCards>0?"Há revisões vencidas. Faça a fila diária antes de iniciar um novo assunto.":"Cada passada corresponde a 15 minutos líquidos em um caderno. A sequência será organizada pela sua trilha."}</p><button className="button primary" onClick={()=>onGo(activeBlock?"Estudar":dueCards>0?"Flashcards":"Estudar")}>{activeBlock?"Retomar estudo":dueCards>0?"Revisar flashcards":"Iniciar estudo"} <ArrowRight size={16}/></button></div>
   <div className="panel"><div className="panel-heading"><div><span className="eyebrow">COMECE POR AQUI</span><h2>Monte sua estrutura</h2></div><Activity/></div><p className="muted-copy">Cadastre disciplinas e depois organize os cadernos que fazem parte de cada uma.</p><div className="recommend-actions"><button className="button secondary" onClick={()=>onGo("Disciplinas")}>Disciplinas</button><button className="button secondary" onClick={()=>onGo("Cadernos")}>Cadernos</button></div></div>
  </div>
  <div className="panel"><div className="panel-heading"><div><span className="eyebrow">SEU PROGRESSO</span><h2>Atividade recente</h2></div><button className="text-button" onClick={()=>onGo("Histórico")}>Ver histórico <ArrowRight size={14}/></button></div>
