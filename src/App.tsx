@@ -251,20 +251,18 @@ function StudyPage({disciplines,notebooks,subjects,notebookSubjects,dependencies
  useEffect(()=>{if(block&&running){const timer=window.setInterval(()=>{const next={...block,elapsedSeconds:elapsedRef.current,updatedAt:nowIso(),lastQuestionNumber:question?Math.max(0,Number(question)-1):block.lastQuestionNumber};void studyBlockRepository.save(next);},5000);return()=>window.clearInterval(timer);}},[block,running,question]);
  useEffect(()=>{if(elapsed>=STUDY_BLOCK_SECONDS&&running){setRunning(false);void completeBlock();}},[elapsed,running]);
  async function begin(){if(!cycleReady){setMessage("Preparando seu ciclo de estudos…");return;}if(!notebookId){setMessage("Cadastre ou selecione um caderno antes de iniciar.");return;}if(isNotebookBlocked(notebookId)){setMessage("Este caderno depende de um pré-requisito pedagógico ainda não consolidado. Continue seguindo a orientação de estudo anterior.");return;}let current=block;if(!current){const now=nowIso();current={id:makeId(),createdAt:now,updatedAt:now,disciplineId,notebookId,elapsedSeconds:0,status:"in_progress",startedAt:now};}else current=resumeStudyBlock({...current,disciplineId,notebookId});await studyBlockRepository.save(current);setBlock(current);setElapsed(current.elapsedSeconds);setSessionStartedAt(v=>v??nowIso());setVisitedNotebookIds(v=>v.includes(notebookId)?v:[...v,notebookId]);setRunning(true);setMessage("");}
- async function pause(){setRunning(false);if(!block)return;const next=pauseStudyBlock({...block,elapsedSeconds:elapsed,lastQuestionNumber:question?Math.max(0,Number(question)-1):block.lastQuestionNumber});await studyBlockRepository.save(next);setBlock(next);setMessage("Bloco pausado. O tempo e a posição foram salvos; sua sessão continua aberta.");reload();}
+ async function creditGeneralTime(currentBlock:StudyBlock,targetElapsed:number){const delta=Math.max(0,targetElapsed-(currentBlock.generalCreditedSeconds??0));if(delta===0)return currentBlock;const now=nowIso();const base=generalCycle??reconcileGeneralStudyCycle(undefined,disciplines.filter(d=>notebooks.some(n=>n.disciplineId===d.id)).map(d=>d.id),now);const timeByDiscipline=Object.fromEntries(disciplines.map(d=>[d.id,d.recommendedMinutes??60]));const next=recordGeneralStudyTime(base,currentBlock.disciplineId,delta,timeByDiscipline,now);setGeneralCycle(next);await settingsRepository.set("generalStudyCycle",next);return {...currentBlock,generalCreditedSeconds:targetElapsed};}
+ async function pause(){setRunning(false);if(!block)return;const credited=await creditGeneralTime(block,elapsed);const next=pauseStudyBlock({...credited,elapsedSeconds:elapsed,lastQuestionNumber:question?Math.max(0,Number(question)-1):block.lastQuestionNumber});await studyBlockRepository.save(next);setBlock(next);setMessage("Bloco pausado. O tempo e a posição foram salvos; sua sessão continua aberta.");reload();}
  async function advanceFromNotebook(manual=false){
   if(!block)return;
   const now=nowIso();
-  const completed={...block,elapsedSeconds:manual?elapsed:STUDY_BLOCK_SECONDS,status:manual?"completed_early" as const:"completed" as const,lastQuestionNumber:question?Math.max(0,Number(question)-1):block.lastQuestionNumber,updatedAt:now,completedAt:now};
+  const finalElapsed=manual?elapsed:STUDY_BLOCK_SECONDS;const credited=await creditGeneralTime(block,finalElapsed);const completed={...credited,elapsedSeconds:finalElapsed,generalCreditedSeconds:finalElapsed,status:manual?"completed_early" as const:"completed" as const,lastQuestionNumber:question?Math.max(0,Number(question)-1):block.lastQuestionNumber,updatedAt:now,completedAt:now};
   await studyBlockRepository.save(completed);
   const storedProgress=await settingsRepository.get("studyCycle:"+disciplineId);const currentProgress=reconcileStudyCycle(storedProgress&&typeof storedProgress==="object"?storedProgress as StudyCycleProgress:cycleProgress,disciplineId,eligibleNotebooks.map(n=>n.id));
   const step=completeCycleNotebook(currentProgress,now);
   setCycleProgress(step.progress);await settingsRepository.set("studyCycle:"+disciplineId,step.progress);
   const next=eligibleNotebooks.find(n=>n.id===step.nextNotebookId);
-  const generalBase=generalCycle??reconcileGeneralStudyCycle(undefined,disciplines.filter(d=>notebooks.some(n=>n.disciplineId===d.id)).map(d=>d.id),now);
-  const timeByDiscipline=Object.fromEntries(disciplines.map(d=>[d.id,d.recommendedMinutes??60]));
-  const generalNext=recordGeneralStudyTime(generalBase,disciplineId,manual?elapsed:STUDY_BLOCK_SECONDS,timeByDiscipline,now);
-  setGeneralCycle(generalNext);await settingsRepository.set("generalStudyCycle",generalNext);
+  const generalNext=generalCycle??reconcileGeneralStudyCycle(undefined,disciplines.filter(d=>notebooks.some(n=>n.disciplineId===d.id)).map(d=>d.id),now);
   setNotebookId(next?.id??block.notebookId);setBlock(undefined);setElapsed(0);setQuestion("");setRunning(false);
   if(generalNext.currentDisciplineId&&generalNext.currentDisciplineId!==disciplineId){setDisciplineId(generalNext.currentDisciplineId);setNotebookId("");setMessage("Tempo planejado desta matéria alcançado. Próxima matéria: "+(disciplines.find(d=>d.id===generalNext.currentDisciplineId)?.name??"próxima disciplina")+". A posição de cada ciclo foi preservada.");reload();return;}
   setMessage(step.completedPass?"Passada "+step.progress.completedPasses+" concluída. Você voltou ao primeiro caderno.":manual?"Caderno encerrado. O tempo parcial foi registrado e a sequência avançou. Próximo: "+(next?.name??"caderno indisponível")+".":"Bloco de 15 minutos concluído. Próximo caderno: "+(next?.name??"nenhum disponível")+".");
@@ -277,7 +275,7 @@ function StudyPage({disciplines,notebooks,subjects,notebookSubjects,dependencies
   setSaving(true);
   try{
    setRunning(false);
-   if(block){const pausedBlock=pauseStudyBlock({...block,elapsedSeconds:elapsed,lastQuestionNumber:question?Math.max(0,Number(question)-1):block.lastQuestionNumber});await studyBlockRepository.save(pausedBlock);setBlock(pausedBlock);}
+   if(block){const credited=await creditGeneralTime(block,elapsed);const pausedBlock=pauseStudyBlock({...credited,elapsedSeconds:elapsed,lastQuestionNumber:question?Math.max(0,Number(question)-1):block.lastQuestionNumber});await studyBlockRepository.save(pausedBlock);setBlock(pausedBlock);}
    const now=nowIso();const valid=segments.filter(x=>x.notebookId&&Math.max(0,Number(x.questions)||0)>0);
    const q=valid.reduce((sum,x)=>sum+Math.max(0,Number(x.questions)||0),0);
    const a=valid.reduce((sum,x)=>sum+Math.min(Math.max(0,Number(x.questions)||0),Math.max(0,Number(x.correct)||0)),0);
