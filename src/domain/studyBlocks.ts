@@ -6,7 +6,7 @@
 
 export const STUDY_BLOCK_SECONDS = 15 * 60;
 
-export type StudyBlockStatus = "in_progress" | "paused" | "completed";
+export type StudyBlockStatus = "in_progress" | "paused" | "completed" | "completed_early";
 
 export type StudyBlock = {
   id: string;
@@ -68,7 +68,7 @@ export function resumeStudyBlock(block: StudyBlock, now = new Date().toISOString
   return { ...block, status: "in_progress", updatedAt: now };
 }
 
-/** Um bloco concluído libera a rotação para o próximo caderno; a passada depende do ciclo inteiro. */
+/** Um bloco de 15 minutos completo libera avanço automático. O encerramento manual antecipado é tratado pela camada de aplicação. */
 export function canAdvanceToNextNotebook(block: StudyBlock): boolean {
   return block.status === "completed" && block.elapsedSeconds >= STUDY_BLOCK_SECONDS;
 }
