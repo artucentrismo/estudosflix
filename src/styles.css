@@ -103,3 +103,9 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--primary); outli
 .plan-metrics .metric-card{min-height:110px}
 
 .recommend-title{font:700 17px/1.4 system-ui;color:var(--title);margin:18px 0 0}
+
+.subject-check-list{display:flex;flex-direction:column;gap:8px;padding:11px;border:1px solid var(--border);border-radius:9px}
+.subject-check-list strong{font-size:10px;color:var(--title)}
+.subject-check-list small{font-size:9px;color:var(--muted)}
+.subject-check-list label{display:flex;align-items:center;gap:7px;font-weight:500}
+.subject-check-list input{width:14px;min-height:14px}
