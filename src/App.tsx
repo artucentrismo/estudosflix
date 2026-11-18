@@ -88,7 +88,7 @@ export default function App(){
         {error&&<div className="demo-notice" role="alert">{error}</div>}
         {loading?<div className="panel"><p>Carregando seus dados locais…</p></div>:null}
         {!loading&&section==="Painel"&&<Dashboard disciplines={disciplines} notebooks={notebooks} sessions={sessions} blocks={blocks} flashcards={flashcards} reviewLimit={reviewLimit} onGo={setSection}/>}
-        {!loading&&section==="Estudar"&&<StudyPage disciplines={disciplines} notebooks={notebooks} subjects={subjects} blocks={blocks} reload={()=>setRefresh(x=>x+1)}/>}
+        {!loading&&section==="Estudar"&&<StudyPage disciplines={disciplines} notebooks={notebooks} subjects={subjects} notebookSubjects={notebookSubjects} dependencies={dependencies} sessionSegments={sessionSegments} blocks={blocks} reload={()=>setRefresh(x=>x+1)}/>}
         {!loading&&section==="Plano de Estudos"&&<PlanPage disciplines={disciplines} plans={plans} items={planItems} reload={()=>setRefresh(x=>x+1)}/>}
         {!loading&&section==="Disciplinas"&&<DisciplinePage disciplines={disciplines} reload={()=>setRefresh(x=>x+1)}/>}
         {!loading&&section==="Assuntos"&&<SubjectPage disciplines={disciplines} subjects={subjects} reload={()=>setRefresh(x=>x+1)}/>}
@@ -163,7 +163,7 @@ function NotebookPage({disciplines,subjects,notebooks,mappings,reload}:{discipli
  async function remove(id:string){if(!confirm("Excluir este caderno e seus vínculos com assuntos?"))return;for(const mapping of mappings.filter(m=>m.notebookId===id))await notebookSubjectRepository.remove(mapping.id);await notebookRepository.remove(id);reload();}
  return <><Header eyebrow="PLANEJAMENTO" title="Cadernos" subtitle="Organize os cadernos por disciplina e associe os assuntos que serão trabalhados em cada passada."/><div className="content-grid"><form className="panel form-panel" onSubmit={save}><h2>Novo caderno</h2><label>Disciplina<select value={disciplineId} onChange={e=>{setDisciplineId(e.target.value);setSelectedSubjectIds([]);}} required><option value="">Selecione</option>{disciplines.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></label><label>Nome do caderno<input value={name} onChange={e=>setName(e.target.value)} placeholder="Ex.: 01 — Conceitos" required/></label><label>Observações<textarea value={description} onChange={e=>setDescription(e.target.value)}/></label><div className="subject-check-list"><strong>Assuntos deste caderno</strong>{subjectOptions.length===0?<small>Cadastre assuntos nesta disciplina para vinculá-los ao caderno.</small>:subjectOptions.map(s=><label key={s.id}><input type="checkbox" checked={selectedSubjectIds.includes(s.id)} onChange={e=>setSelectedSubjectIds(v=>e.target.checked?[...v,s.id]:v.filter(id=>id!==s.id))}/>{s.name}</label>)}</div><button className="button primary" disabled={!disciplines.length}><Plus size={16}/> Adicionar caderno</button>{!disciplines.length&&<p className="muted-copy">Cadastre uma disciplina primeiro.</p>}</form><div className="panel"><h2>Seus cadernos</h2>{notebooks.length===0?<p className="muted-copy">Nenhum caderno cadastrado.</p>:notebooks.map(n=>{const names=mappings.filter(m=>m.notebookId===n.id).map(m=>subjects.find(s=>s.id===m.subjectId)?.name).filter(Boolean);return <div className="diagnostic-row" key={n.id}><span className="diagnostic-dot blue-dot"/><div><strong>{n.name}</strong><small>{disciplines.find(d=>d.id===n.disciplineId)?.name??"Disciplina não encontrada"} · {names.length?names.join(", "):"Sem assuntos vinculados"}</small></div><button className="icon-button danger" onClick={()=>void remove(n.id)} aria-label={"Excluir "+n.name}><Trash2 size={16}/></button></div>})}</div></div></>;
 }
-function StudyPage({disciplines,notebooks,subjects,blocks,reload}:{disciplines:Row[];notebooks:Row[];subjects:Row[];blocks:StudyBlock[];reload:()=>void}){
+function StudyPage({disciplines,notebooks,subjects,notebookSubjects,dependencies,sessionSegments,blocks,reload}:{disciplines:Row[];notebooks:Row[];subjects:Row[];notebookSubjects:NotebookSubjectRecord[];dependencies:DependencyRecord[];sessionSegments:SegmentRecord[];blocks:StudyBlock[];reload:()=>void}){
  const paused=blocks.find(b=>b.status==="paused"||b.status==="in_progress");
  const [disciplineId,setDisciplineId]=useState(paused?.disciplineId??disciplines[0]?.id??"");
  const [notebookId,setNotebookId]=useState(paused?.notebookId??"");
@@ -185,25 +185,40 @@ function StudyPage({disciplines,notebooks,subjects,blocks,reload}:{disciplines:R
  useEffect(()=>{elapsedRef.current=elapsed;},[elapsed]);
  const [saving,setSaving]=useState(false);const [message,setMessage]=useState("");
  const available=notebooks.filter(n=>n.disciplineId===disciplineId);
+ const isNotebookBlocked=(notebookId:string)=>{
+  const subjectIds=notebookSubjects.filter(m=>m.notebookId===notebookId).map(m=>m.subjectId);
+  for(const subjectId of subjectIds){for(const dependency of dependencies.filter(d=>d.dependentSubjectId===subjectId)){
+   const rows=sessionSegments.filter(s=>s.subjectId===dependency.prerequisiteSubjectId);
+   const attempts:Attempt[]=rows.map(s=>({questions:s.questions,correct:s.correct,date:s.date}));
+   const exposures:Exposure[]=rows.filter(s=>s.questions>=10).map(s=>({questions:s.questions,correct:s.correct,date:s.date}));
+   const result=calculateDomain(attempts,exposures);
+   if(result.value===null||result.totalQuestions<30||exposures.length<2)continue;
+   const factor=dependency.strength==="critical"?1:dependency.strength==="strong"?.7:dependency.strength==="moderate"?.4:.2;
+   if((100-result.value)*factor>=60)return true;
+  }}
+  return false;
+ };
+ const eligibleNotebooks=available.filter(n=>!isNotebookBlocked(n.id));
  const progress=getStudyBlockProgress({elapsedSeconds:elapsed});
- const linkedSubjects=subjects.filter(s=>s.disciplineId===disciplineId);
+ const mappedSubjectIds=notebookSubjects.filter(m=>m.notebookId===notebookId).map(m=>m.subjectId);
+ const linkedSubjects=subjects.filter(s=>s.disciplineId===disciplineId&&(!mappedSubjectIds.length||mappedSubjectIds.includes(s.id)));
  const notebookHistory=blocks.filter(b=>b.notebookId===notebookId).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))[0];
  useEffect(()=>{if(!block){setQuestion(notebookHistory?.lastQuestionNumber!==undefined?String(notebookHistory.lastQuestionNumber+1):"");}},[notebookId,blocks,block?.id]);
  useEffect(()=>{if(!notebookId&&available[0])setNotebookId(available[0].id);},[available,notebookId]);
  useEffect(()=>{if(!running)return;const timer=window.setInterval(()=>{setElapsed(v=>Math.min(STUDY_BLOCK_SECONDS,v+1));setSessionElapsed(v=>v+1);},1000);return()=>window.clearInterval(timer);},[running]);
  useEffect(()=>{if(block&&running){const timer=window.setInterval(()=>{const next={...block,elapsedSeconds:elapsedRef.current,updatedAt:nowIso(),lastQuestionNumber:question?Math.max(0,Number(question)-1):block.lastQuestionNumber};void studyBlockRepository.save(next);},5000);return()=>window.clearInterval(timer);}},[block,running,question]);
  useEffect(()=>{if(elapsed>=STUDY_BLOCK_SECONDS&&running){setRunning(false);void completeBlock();}},[elapsed,running]);
- async function begin(){if(!notebookId){setMessage("Cadastre ou selecione um caderno antes de iniciar.");return;}let current=block;if(!current){const now=nowIso();current={id:makeId(),createdAt:now,updatedAt:now,disciplineId,notebookId,elapsedSeconds:0,status:"in_progress",startedAt:now};}else current=resumeStudyBlock({...current,disciplineId,notebookId});await studyBlockRepository.save(current);setBlock(current);setElapsed(current.elapsedSeconds);setSessionStartedAt(v=>v??nowIso());setVisitedNotebookIds(v=>v.includes(notebookId)?v:[...v,notebookId]);setRunning(true);setMessage("");}
+ async function begin(){if(!notebookId){setMessage("Cadastre ou selecione um caderno antes de iniciar.");return;}if(isNotebookBlocked(notebookId)){setMessage("Este caderno depende de um pré-requisito que ainda está bloqueado. Reforce o assunto anterior antes de avançar.");return;}let current=block;if(!current){const now=nowIso();current={id:makeId(),createdAt:now,updatedAt:now,disciplineId,notebookId,elapsedSeconds:0,status:"in_progress",startedAt:now};}else current=resumeStudyBlock({...current,disciplineId,notebookId});await studyBlockRepository.save(current);setBlock(current);setElapsed(current.elapsedSeconds);setSessionStartedAt(v=>v??nowIso());setVisitedNotebookIds(v=>v.includes(notebookId)?v:[...v,notebookId]);setRunning(true);setMessage("");}
  async function pause(){setRunning(false);if(!block)return;const next=pauseStudyBlock({...block,elapsedSeconds:elapsed,lastQuestionNumber:question?Math.max(0,Number(question)-1):block.lastQuestionNumber});await studyBlockRepository.save(next);setBlock(next);setMessage("Bloco pausado. O tempo e a posição foram salvos; sua sessão continua aberta.");reload();}
  async function completeBlock(){
   if(!block)return;
   const completed=addStudyTime({...block,elapsedSeconds:elapsed,status:"in_progress",lastQuestionNumber:question?Math.max(0,Number(question)-1):block.lastQuestionNumber,updatedAt:nowIso()},Math.max(0,STUDY_BLOCK_SECONDS-elapsed));
   await studyBlockRepository.save(completed);
-  const index=available.findIndex(n=>n.id===block.notebookId);
-  const next=available.length>1?available[(index+1+available.length)%available.length]:undefined;
+  const index=eligibleNotebooks.findIndex(n=>n.id===block.notebookId);
+  const next=eligibleNotebooks.length>1?eligibleNotebooks[(index+1+eligibleNotebooks.length)%eligibleNotebooks.length]:eligibleNotebooks[0];
   setNotebookId(next?.id??block.notebookId);
   setBlock(undefined);setElapsed(0);setQuestion("");
-  setMessage("Passada concluída! 15 minutos registrados. Próximo caderno: "+(next?.name??"o caderno atual")+".");
+  setMessage("Passada concluída! 15 minutos registrados. Próximo caderno elegível: "+(next?.name??"nenhum disponível; revise os pré-requisitos")+".");
   reload();
  }
  async function finishSession(){
@@ -223,11 +238,11 @@ function StudyPage({disciplines,notebooks,subjects,blocks,reload}:{disciplines:R
   }catch(e){setMessage(e instanceof Error?e.message:"Não foi possível finalizar a sessão.");}
   finally{setSaving(false);}
  }
- const nextNotebook=useMemo(()=>available.find((n,i)=>i>available.findIndex(x=>x.id===notebookId))??available[0],[available,notebookId]);
+ const nextNotebook=useMemo(()=>eligibleNotebooks.find((n,i)=>i>eligibleNotebooks.findIndex(x=>x.id===notebookId))??eligibleNotebooks[0],[eligibleNotebooks,notebookId]);
  return <><Header eyebrow="MÉTODO KYRLA / TATA" title="Estudar por passadas" subtitle="Cada passada tem 15 minutos líquidos em um único caderno. Interrompa e retome quando precisar."/>
  <div className="content-grid"><div className="panel timer-panel"><div className="panel-heading"><div><span className="eyebrow">BLOCO ATUAL</span><h2>{block?notebooks.find(n=>n.id===block.notebookId)?.name??"Caderno selecionado":"Prepare sua passada"}</h2></div><span className={running?"status-label success":"status-label warning"}>{running?"Em andamento":elapsed>=STUDY_BLOCK_SECONDS?"Concluído":"Pausado"}</span></div>
  <div className="timer-display">{fmt(elapsed)}<small> / 15:00</small></div><div className="trail-bar timer-bar"><span style={{width:progress.completionPercent+"%"}}/></div><div className="timer-caption"><span>{fmt(elapsed)} estudados</span><span>{fmt(progress.remainingSeconds)} restantes</span></div>
- <div className="timer-actions">{!running?<button className="button primary" onClick={()=>void begin()} disabled={!disciplines.length||!notebooks.length||elapsed>=STUDY_BLOCK_SECONDS}><Play size={16}/> {elapsed?"Retomar bloco":"Iniciar passada"}</button>:<button className="button secondary" onClick={()=>void pause()}><Pause size={16}/> Pausar</button>}{sessionElapsed>0&&<button className="button secondary" onClick={()=>void finishSession()} disabled={saving}><Check size={16}/> Finalizar sessão</button>}</div>
+ <div className="timer-actions">{!running?<button className="button primary" onClick={()=>void begin()} disabled={!disciplines.length||!eligibleNotebooks.length||elapsed>=STUDY_BLOCK_SECONDS||isNotebookBlocked(notebookId)}><Play size={16}/> {elapsed?"Retomar bloco":"Iniciar passada"}</button>:<button className="button secondary" onClick={()=>void pause()}><Pause size={16}/> Pausar</button>}{sessionElapsed>0&&<button className="button secondary" onClick={()=>void finishSession()} disabled={saving}><Check size={16}/> Finalizar sessão</button>}</div>
  {message&&<p className="muted-copy" role="status">{message}</p>}
  </div>
  <div className="panel form-panel"><h2>Configurar estudo</h2><label>Disciplina<select value={disciplineId} onChange={e=>{setDisciplineId(e.target.value);setNotebookId("");}} disabled={!!block&&elapsed>0||sessionElapsed>0}><option value="">Selecione</option>{disciplines.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></label><label>Caderno<select value={notebookId} onChange={e=>setNotebookId(e.target.value)} disabled={!!block&&elapsed>0}><option value="">Selecione</option>{available.map(n=><option key={n.id} value={n.id}>{n.name}</option>)}</select></label><label>Próxima questão / posição<input type="number" min="0" value={question} onChange={e=>setQuestion(e.target.value)} placeholder="Ex.: 27"/></label><div className="divider"/><div className="panel-heading"><h3>Desempenho por assunto</h3><button type="button" className="text-button" onClick={()=>setSegments(v=>[...v,{key:makeId(),subjectId:"",questions:"0",correct:"0",difficulties:[]}])}><Plus size={14}/> Adicionar assunto</button></div>{segments.map((segment,index)=><div className="segment-editor" key={segment.key}><div className="segment-head"><strong>Assunto {index+1}</strong>{segments.length>1&&<button type="button" className="text-button danger" onClick={()=>setSegments(v=>v.filter(x=>x.key!==segment.key))}>Remover</button>}</div><label>Assunto<select value={segment.subjectId} onChange={e=>setSegments(v=>v.map(x=>x.key===segment.key?{...x,subjectId:e.target.value}:x))}><option value="">Selecione o assunto</option>{linkedSubjects.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></label><div className="two-fields"><label>Questões<input type="number" min="0" value={segment.questions} onChange={e=>setSegments(v=>v.map(x=>x.key===segment.key?{...x,questions:e.target.value}:x))}/></label><label>Acertos<input type="number" min="0" max={segment.questions} value={segment.correct} onChange={e=>setSegments(v=>v.map(x=>x.key===segment.key?{...x,correct:e.target.value}:x))}/></label></div><div className="difficulty-picks">{["Errei conceitos","Acertei no chute","Acertei sem segurança"].map(label=><label key={label}><input type="checkbox" checked={segment.difficulties.includes(label)} onChange={e=>setSegments(v=>v.map(x=>x.key===segment.key?{...x,difficulties:e.target.checked?[...x.difficulties,label]:x.difficulties.filter(d=>d!==label)}:x))}/>{label}</label>)}</div></div>)}<p className="muted-copy small-copy">Tempo desta sessão: {fmt(sessionElapsed)} em {visitedNotebookIds.length} cadernos. A passada é contada pelo tempo; questões e acertos são registrados separadamente por assunto.</p></div></div>
