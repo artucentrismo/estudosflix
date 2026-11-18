@@ -38,4 +38,8 @@
 - Validar se a fórmula de consistência (1 - DP/50) é adequada para exposições muito heterogêneas.
 
 Os limiares são regras iniciais versionadas, não verdades universais. Não devem ser alterados sem registrar a justificativa e atualizar os testes.
-\n\n## Decisão de produto: WebApp universal\n\nA experiência principal será uma única aplicação web responsiva. Não será mantida uma versão desktop nativa separada no MVP. A instalação PWA é opcional e serve apenas para facilitar o acesso; o endereço web continua sendo a porta principal de entrada. Cada navegador/dispositivo armazena seus próprios dados localmente no IndexedDB. A transferência entre aparelhos será feita por backup/importação manual.\n
+
+
+## Decisão de produto: WebApp universal
+
+A experiência principal será uma única aplicação web responsiva. Não será mantida uma versão desktop nativa separada no MVP. A instalação PWA é opcional e serve apenas para facilitar o acesso; o endereço web continua sendo a porta principal de entrada. Cada navegador/dispositivo armazena seus próprios dados localmente no IndexedDB. A transferência entre aparelhos será feita por backup/importação manual.
