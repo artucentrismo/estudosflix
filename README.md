@@ -40,4 +40,4 @@ React + TypeScript + Vite + PWA + IndexedDB. O GitHub Pages hospeda apenas os ar
 
 ## Estado do projeto
 
-A implementação da arquitetura v3 está na branch `feature/notebook-first-method-v3`, aguardando validação automatizada e revisão antes de integrar à branch `main`. A versão publicada não muda até a integração.
+A arquitetura v3 foi integrada à branch `main` pelo PR #4. Os testes automatizados e o build de produção passaram antes da integração. A publicação no GitHub Pages é automática; confirme a conclusão da ação de deploy antes de considerar a nova versão disponível publicamente.
