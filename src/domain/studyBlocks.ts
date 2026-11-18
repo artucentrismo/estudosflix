@@ -10,6 +10,7 @@ export type StudyBlockStatus = "in_progress" | "paused" | "completed";
 
 export type StudyBlock = {
   id: string;
+  createdAt: string;
   disciplineId: string;
   notebookId: string;
   elapsedSeconds: number;
