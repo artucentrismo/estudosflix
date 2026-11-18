@@ -15,7 +15,7 @@ import {
 } from "./domain/studyBlocks";
 
 type Section = "Painel" | "Estudar" | "Disciplinas" | "Assuntos" | "Cadernos" | "Histórico" | "Configurações";
-type Row = { id:string; name:string; createdAt:string; updatedAt:string; disciplineId?:string; description?:string };
+type Row = { id:string; name:string; createdAt:string; updatedAt:string; disciplineId?:string; description?:string; parentId?:string };
 type Session = { id:string; createdAt:string; updatedAt:string; disciplineId:string; notebookId:string; durationSeconds:number; questions:number; correct:number; date:string };
 
 const sections: {name:Section; icon:typeof LayoutDashboard}[] = [
