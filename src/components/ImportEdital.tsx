@@ -39,8 +39,8 @@ export default function ImportEdital({ reload }: Props) {
     try {
       const disciplineIds = new Map<string, string>();
       const notebookIds = new Map<string, string>();
-      const currentDisciplines = await disciplineRepository.list() as ExistingRow[];
-      const currentNotebooks = await notebookRepository.list() as ExistingRow[];
+      const currentDisciplines = await disciplineRepository.list() as unknown as ExistingRow[];
+      const currentNotebooks = await notebookRepository.list() as unknown as ExistingRow[];
       const sortedDisciplines = [...data.disciplines].sort((a,b)=>a.order-b.order);
       for (const item of sortedDisciplines) {
         const existing = currentDisciplines.find(row => clean(row.name) === clean(item.name));
@@ -72,13 +72,13 @@ export default function ImportEdital({ reload }: Props) {
         const parentId = notebookIds.get(item.parentCode);
         if (childId && parentId && childId !== parentId) {
           const child = await notebookRepository.get(childId);
-          if (child && !(child as ExistingRow & { parentId?: string }).parentId) {
+          if (child && !(child as unknown as ExistingRow & { parentId?: string }).parentId) {
             await notebookRepository.save({ ...child, parentId });
           }
         }
       }
-      const existingSubjects = await subjectRepository.list() as ExistingRow[];
-      const existingMappings = await notebookSubjectRepository.list() as Array<{id:string; notebookId:string; subjectId:string}>;
+      const existingSubjects = await subjectRepository.list() as unknown as ExistingRow[];
+      const existingMappings = await notebookSubjectRepository.list() as unknown as Array<{id:string; notebookId:string; subjectId:string}>;
       let subjectsCreated = 0;
       for (const item of data.subjects) {
         const disciplineId = disciplineIds.get(item.disciplineCode)!;
@@ -96,7 +96,7 @@ export default function ImportEdital({ reload }: Props) {
         ].filter(Boolean).join("\n");
         const subject = await subjectRepository.save({ name: item.name, description, disciplineId, editalCode: item.code, editalOrder: item.order });
         await notebookSubjectRepository.save({ notebookId, subjectId: subject.id });
-        existingSubjects.push(subject as ExistingRow);
+        existingSubjects.push(subject as unknown as ExistingRow);
         existingMappings.push({ id: "", notebookId, subjectId: subject.id });
         subjectsCreated++;
       }
