@@ -129,16 +129,15 @@ function Dashboard({disciplines,notebooks,sessions,blocks,flashcards,reviewLimit
  const targetDiscipline=activeBlock?disciplines.find(d=>d.id===activeBlock.disciplineId):nextDiscipline;
  const cycle=targetDiscipline?cycles[targetDiscipline.id]:undefined;
  const cycleVisited=new Set(cycle?.visitedNotebookIds??[]);
- const recommendedSeconds=import.meta.env.DEV?Math.max(60,(targetDiscipline?.recommendedMinutes??60)*60*ACTIVE_STUDY_BLOCK_SECONDS/STUDY_BLOCK_SECONDS):(targetDiscipline?.recommendedMinutes??60)*60;
- const subjectElapsed=targetDiscipline?generalCycle?.elapsedSecondsByDiscipline[targetDiscipline.id]??0:0;
  const ordered=notebooks.filter(n=>n.disciplineId===targetDiscipline?.id).sort((a,b)=>(a.cycleOrder??0)-(b.cycleOrder??0)||a.createdAt.localeCompare(b.createdAt));
+ const passLimit=Math.min(ordered.length,Math.max(1,targetDiscipline?.notebooksPerPass??4));
  const nextNotebook=activeNotebook??notebooks.find(n=>n.id===cycle?.notebookIds[cycle.currentNotebookIndex])??ordered[0];
  return <><Header eyebrow="SEU CICLO DE ESTUDOS" title="O que vamos estudar agora?" subtitle="O EstudosFlix organiza o próximo passo. Você só precisa seguir o ciclo."/>
  <div className="content-grid">
   <div className="panel"><div className="panel-heading"><div><span className="eyebrow">PRÓXIMO ESTUDO</span><h2>{activeBlock?"Continue de onde parou":"Seu próximo caderno"}</h2></div><Compass/></div>
    <h3 className="recommend-title">{targetDiscipline?.name??"Comece cadastrando uma disciplina"}</h3>
    <p className="muted-copy">{nextNotebook?.name??"Adicione cadernos à sua disciplina para montar o ciclo."}</p>
-   {cycle&&<><p className="muted-copy">Passada {cycle.completedPasses+1} · Cadernos visitados: {cycleVisited.size}/{cycle.notebookIds.length} · Tempo da matéria: {fmt(subjectElapsed)} / {fmt(recommendedSeconds)}</p><div className="trail-bar"><span style={{width:Math.min(100,recommendedSeconds?subjectElapsed/recommendedSeconds*100:0)+"%"}}/></div></>}
+   {cycle&&<><p className="muted-copy">Passagem {cycle.completedPasses+1} · Cadernos visitados: {cycleVisited.size}/{passLimit}</p><div className="trail-bar"><span style={{width:Math.min(100,passLimit?cycleVisited.size/passLimit*100:0)+"%"}}/></div></>}
    <button className="button primary" onClick={()=>onGo("Estudar")} disabled={!nextNotebook}>{activeBlock?"Retomar estudo":"Iniciar estudo"} <ArrowRight size={16}/></button>
   </div>
   <div className="panel"><div className="panel-heading"><div><span className="eyebrow">REVISÕES DO DIA</span><h2>{dueCards} flashcards pendentes</h2></div><Brain/></div><p className="muted-copy">As revisões ficam fora do ciclo de cadernos e têm uma fila própria.</p><button className="button secondary" onClick={()=>onGo("Revisões")}>Iniciar revisões <ArrowRight size={16}/></button></div>
