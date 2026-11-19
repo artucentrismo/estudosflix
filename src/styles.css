@@ -200,3 +200,8 @@ body { font-size: 16px; line-height: 1.55; }
   .main-area { margin-left: 238px; }
   .nav-item { font-size: 14px; min-height: 52px; }
 }
+
+@media (min-width: 761px) and (max-width: 1100px) {
+  .content-grid, .bottom-grid { grid-template-columns: minmax(0, 1fr); }
+  .timer-panel { min-height: 300px; }
+}
