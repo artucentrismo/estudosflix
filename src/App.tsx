@@ -159,7 +159,7 @@ function Dashboard({disciplines,notebooks,sessions,blocks,flashcards,reviewLimit
   </div>
   <div className="panel"><div className="panel-heading"><div><span className="eyebrow">REVISÕES DO DIA</span><h2>{dueCards} flashcards pendentes</h2></div><Brain/></div><p className="muted-copy">As revisões ficam fora do ciclo de cadernos e têm uma fila própria.</p><button className="button secondary" onClick={()=>onGo("Revisões")}>Iniciar revisões <ArrowRight size={16}/></button></div>
  </div>
- <ImportEdital disciplines={disciplines} reload={reload}/>
+ <ImportEdital reload={reload}/>
  <div className="metric-grid">
   <Metric icon={<GraduationCap/>} label="Disciplinas" value={String(disciplines.length)} detail="Em estudo"/>
   <Metric icon={<Clock3/>} label="Tempo estudado" value={fmt(total)} detail="Tempo líquido registrado"/>
