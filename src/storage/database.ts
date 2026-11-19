@@ -215,3 +215,18 @@ export async function closeDatabaseForTests(): Promise<void> {
   db?.close();
   databasePromise = undefined;
 }
+
+/** Apaga os bancos locais de produção e de desenvolvimento após confirmação explícita na interface. */
+export async function clearAllLocalDatabases(): Promise<void> {
+  const open = await databasePromise?.catch(() => undefined);
+  open?.close();
+  databasePromise = undefined;
+
+  const names = [...new Set([DATABASE_NAME, "estudosflix-local", "estudosflix-local-sandbox"])];
+  await Promise.all(names.map(name => new Promise<void>((resolve, reject) => {
+    const request = indexedDB.deleteDatabase(name);
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error ?? new Error("Não foi possível apagar os dados locais."));
+    request.onblocked = () => reject(new Error("Feche outras abas do EstudosFlix e tente apagar os dados novamente."));
+  })));
+}
