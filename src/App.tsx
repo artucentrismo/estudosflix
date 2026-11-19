@@ -286,7 +286,6 @@ function StudyPage({disciplines,notebooks,blocks,reload}:{disciplines:Row[];note
  const available=notebooks.filter(n=>n.disciplineId===disciplineId).sort((a,b)=>(a.cycleOrder??0)-(b.cycleOrder??0)||a.createdAt.localeCompare(b.createdAt));
  const eligibleNotebooks=available;
  const eligibleIdsKey=eligibleNotebooks.map(n=>n.id).join("|");
- const timerNotebook=notebooks.find(n=>n.id===(block?.notebookId??notebookId));
  const configuredDurationMinutes=Math.max(5,Number(disciplines.find(d=>d.id===disciplineId)?.durationMinutes??15));
  const blockDurationSeconds=import.meta.env.DEV?configuredDurationMinutes:configuredDurationMinutes*60;
  useEffect(()=>{let alive=true;setCycleReady(false);void settingsRepository.get("studyCycle:"+disciplineId).then(value=>{if(!alive)return;const saved=value&&typeof value==="object"?value as StudyCycleProgress:undefined;const reconciled=reconcileStudyCycle(saved,disciplineId,eligibleNotebooks.map(n=>n.id));if(!saved&&paused){const pausedIndex=eligibleNotebooks.findIndex(n=>n.id===paused.notebookId);if(pausedIndex>=0)reconciled.currentNotebookIndex=pausedIndex;}setCycleProgress(reconciled);void settingsRepository.set("studyCycle:"+disciplineId,reconciled);setCycleReady(true);});return()=>{alive=false;};},[disciplineId,eligibleIdsKey]);
