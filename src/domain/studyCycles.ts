@@ -106,7 +106,7 @@ export function completeCycleNotebook(
     ...progress,
     visitedNotebookIds: nextVisited,
     passStartedAt: completedPass ? updatedAt : (progress.passStartedAt ?? updatedAt),
-    completedPassHistory: completedPass ? [...passHistory, { number: nextPassNumber, startedAt: progress.passStartedAt ?? updatedAt, completedAt: updatedAt, notebookIds: [...ids] }] : passHistory,
+    completedPassHistory: completedPass ? [...passHistory, { number: nextPassNumber, startedAt: progress.passStartedAt ?? updatedAt, completedAt: updatedAt, notebookIds: [...visited] }] : passHistory,
     currentNotebookIndex: nextIndex,
     completedPasses: nextPassNumber,
     updatedAt,
