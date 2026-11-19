@@ -95,6 +95,7 @@ export function reactivateFlashcard(card: Flashcard, updatedAt = new Date().toIS
     level: 0,
     reactivationCount: (card.reactivationCount ?? 0) + 1,
     nextReviewAt: updatedAt,
+    fsrsCard: undefined,
     updatedAt,
   };
 }
