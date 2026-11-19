@@ -1,4 +1,5 @@
 import type { BaseRecord } from "../storage/database";
+import type { FsrsCardSnapshot, FsrsReviewSnapshot } from "./ankiScheduler";
 
 export const REE_INTERVAL_DAYS = [1, 3, 7, 15, 30, 60] as const;
 export const DEFAULT_DAILY_REVIEW_LIMIT = 30;
@@ -25,6 +26,7 @@ export type Flashcard = BaseRecord & {
   reactivationCount?: number;
   recentResults?: boolean[];
   lastCorrectAt?: string;
+  fsrsCard?: FsrsCardSnapshot;
 };
 
 export type FlashcardReview = BaseRecord & {
@@ -32,6 +34,10 @@ export type FlashcardReview = BaseRecord & {
   reviewedAt: string;
   remembered: boolean;
   responseTimeMs: number;
+  rating?: "again" | "hard" | "good" | "easy";
+  intervalDays?: number;
+  scheduledAt?: string;
+  schedulerLog?: FsrsReviewSnapshot["log"];
 };
 
 export function reviewFlashcard(
@@ -89,6 +95,7 @@ export function reactivateFlashcard(card: Flashcard, updatedAt = new Date().toIS
     level: 0,
     reactivationCount: (card.reactivationCount ?? 0) + 1,
     nextReviewAt: updatedAt,
+    fsrsCard: undefined,
     updatedAt,
   };
 }
@@ -113,7 +120,13 @@ export function selectDailyReviewQueue(
 ): Flashcard[] {
   const timestamp = now.getTime();
   return cards
-    .filter(card => !card.archived && new Date(card.nextReviewAt).getTime() <= timestamp)
-    .sort((a, b) => calculateFlashcardPriority(b, now) - calculateFlashcardPriority(a, now) || new Date(a.nextReviewAt).getTime() - new Date(b.nextReviewAt).getTime())
+    .filter(card => !card.archived && new Date(card.fsrsCard?.due ?? card.nextReviewAt).getTime() <= timestamp)
+    .sort((a, b) => {
+      const aState = a.fsrsCard?.state ?? 0;
+      const bState = b.fsrsCard?.state ?? 0;
+      const aQueue = aState === 1 || aState === 3 ? 0 : aState === 2 ? 1 : 2;
+      const bQueue = bState === 1 || bState === 3 ? 0 : bState === 2 ? 1 : 2;
+      return aQueue - bQueue || calculateFlashcardPriority(b, now) - calculateFlashcardPriority(a, now) || new Date(a.fsrsCard?.due ?? a.nextReviewAt).getTime() - new Date(b.fsrsCard?.due ?? b.nextReviewAt).getTime();
+    })
     .slice(0, Math.max(0, Math.min(limit, MAX_DAILY_REVIEW_LIMIT)));
 }
