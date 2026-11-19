@@ -1,4 +1,4 @@
-import { ArrowRight, BookOpen, Brain, CheckCircle2, GraduationCap, Layers3, Repeat, Sparkles, Target, TrendingUp } from "lucide-react";
+import { ArrowRight, BookOpen, Brain, CheckCircle2, FileText, GraduationCap, Layers3, Repeat, Sparkles, Target, TrendingUp } from "lucide-react";
 type Props = { onStart: () => void };
 const steps = [
 {number:"01",title:"Crie suas disciplinas",text:"Adicione as áreas que deseja estudar, como Direito Constitucional, Português ou Matemática.",icon:GraduationCap},
@@ -12,7 +12,8 @@ const areas = [
 {icon:Sparkles,title:"Início",text:"O próximo estudo, as revisões do dia e um resumo do progresso."},
 {icon:GraduationCap,title:"Disciplinas",text:"Suas disciplinas, seus cadernos e a organização de cada área."},
 {icon:Repeat,title:"Ciclo",text:"A ordem dos cadernos, a passada atual e o próximo caderno."},
-{icon:Brain,title:"Revisões",text:"Flashcards pendentes e a missão de revisão do dia."},
+{icon:Brain,title:"Revisões",text:"Biblioteca de baralhos, subbaralhos e missão de revisão do dia."},
+{icon:FileText,title:"Redações",text:"Registre suas produções, notas por competência e evolução textual."},
 {icon:TrendingUp,title:"Evolução",text:"Seu progresso, histórico, gargalos e recomendações."}];
 const principles=[["01","Menos planejamento","Você não precisa montar cronogramas complexos."],["02","Mais execução","O foco está em estudar, não em organizar estudos."],["03","Evolução contínua","Cada visita aos cadernos gera progresso e reforço do aprendizado."],["04","Correção de erros","As dificuldades identificadas viram revisões objetivas."]];
 export default function MethodWelcome({onStart}:Props){

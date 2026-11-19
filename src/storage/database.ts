@@ -1,5 +1,5 @@
 export const DATABASE_NAME = import.meta.env.DEV ? "estudosflix-local-sandbox" : "estudosflix-local";
-export const DATABASE_VERSION = 2;
+export const DATABASE_VERSION = 3;
 
 export const STORE_NAMES = [
   "disciplines",
@@ -15,6 +15,7 @@ export const STORE_NAMES = [
   "flashcardConcepts",
   "flashcards",
   "flashcardReviews",
+  "essays",
   "reviewQueue",
   "settings",
 ] as const;
