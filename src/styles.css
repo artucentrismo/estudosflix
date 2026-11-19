@@ -408,3 +408,36 @@ body { font-size: 16px; line-height: 1.55; }
   font-size: 14px;
   line-height: 1.55;
 }
+
+
+/* Checklist de primeiros passos: maior e centralizado no cartão */
+.method-onboarding-group .method-getting-started {
+  align-items: center;
+  text-align: center;
+  padding: clamp(26px, 4vw, 40px);
+}
+.method-onboarding-group .method-getting-started > div {
+  width: 100%;
+}
+.method-onboarding-group .method-getting-started p {
+  margin-inline: auto;
+}
+.method-onboarding-group .method-getting-started ol {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0;
+  list-style-position: inside;
+  text-align: center;
+  font-size: 16px;
+  line-height: 2.15;
+}
+.method-onboarding-group .method-getting-started .method-start {
+  align-self: center;
+  margin-top: 4px;
+}
+@media(max-width:760px) {
+  .method-onboarding-group .method-getting-started ol {
+    font-size: 15px;
+    line-height: 2;
+  }
+}
