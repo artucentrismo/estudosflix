@@ -65,7 +65,9 @@ function textContent(node: Element | null): string {
   return node?.textContent?.trim() ?? "";
 }
 function readSheet(xml: Document, shared: string[]): string[][] {
-  return Array.from(xml.getElementsByTagName("row")).map(row => {
+  const rows: string[][] = [];
+  for (const row of Array.from(xml.getElementsByTagName("row"))) {
+    const rowIndex = Math.max(0, Number(row.getAttribute("r") ?? "1") - 1);
     const cells: string[] = [];
     for (const cell of Array.from(row.getElementsByTagName("c"))) {
       const index = colIndex(cell.getAttribute("r") ?? "A1");
@@ -75,8 +77,9 @@ function readSheet(xml: Document, shared: string[]): string[][] {
       else if (type === "inlineStr") value = Array.from(cell.getElementsByTagName("t")).map(t => t.textContent ?? "").join("");
       cells[index] = value;
     }
-    return cells;
-  });
+    rows[rowIndex] = cells;
+  }
+  return rows;
 }
 function rowsAsObjects(rows: string[][]): SheetRow[] {
   const headers = (rows[3] ?? []).map(value => value.trim());
@@ -135,6 +138,7 @@ export async function parseEditalWorkbook(file: File): Promise<EditalStructure> 
   const notebookCodes = new Set(notebooks.map(row => row.code));
   if (disciplineCodes.size !== disciplines.length) warnings.push("Há códigos de disciplina repetidos.");
   if (notebookCodes.size !== notebooks.length) warnings.push("Há códigos de caderno repetidos.");
+  if (new Set(subjects.map(row => row.code)).size !== subjects.length) warnings.push("Há códigos de assunto repetidos.");
   const unknownDiscipline = notebooks.filter(row => !disciplineCodes.has(row.disciplineCode));
   if (unknownDiscipline.length) warnings.push(unknownDiscipline.length + " caderno(s) apontam para códigos de disciplina inexistentes.");
   const invalidSubjects = subjects.filter(row => !disciplineCodes.has(row.disciplineCode) || !notebookCodes.has(row.notebookCode));
