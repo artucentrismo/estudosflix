@@ -106,7 +106,7 @@ export default function App(){
         
         
         
-        {!loading&&section==="Evolução"&&<EvolutionPage disciplines={disciplines} segments={sessionSegments} notebooks={notebooks} cards={flashcards}/>}
+        {!loading&&section==="Evolução"&&<EvolutionPage disciplines={disciplines} segments={sessionSegments} sessions={sessions} notebooks={notebooks} cards={flashcards}/>}
         {!loading&&section==="Configurações"&&<SettingsPage dark={dark} setDark={setDark} reviewLimit={reviewLimit} setReviewLimit={setReviewLimit} reload={()=>setRefresh(x=>x+1)}/>}
       </div>
     </main>
