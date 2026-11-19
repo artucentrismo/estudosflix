@@ -396,3 +396,8 @@ body { font-size: 16px; line-height: 1.55; }
 .edital-import-success{color:var(--green);background:var(--green-light)}
 .edital-import-error p{margin:4px 0 0}
 @media(max-width:600px){.edital-preview-heading{align-items:flex-start;flex-direction:column;gap:3px}.edital-import-actions{display:grid;grid-template-columns:1fr}.edital-import-actions .button{width:100%;justify-content:center}.edital-example-button{width:100%;justify-content:center}}
+
+.edital-text-instructions{gap:6px;padding:10px 12px;margin:9px 0 11px;border-radius:10px}
+.edital-text-instructions>p{font-size:10px;line-height:1.4}
+.edital-textarea{min-height:155px;padding:11px 12px}
+.edital-ignored-note{margin:0;color:var(--muted);font-size:10px}
