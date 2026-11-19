@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import MethodWelcome from "./components/MethodWelcome";
-import ImportEdital from "./components/ImportEdital";
 import { reactivateFlashcard, selectDailyReviewQueue, type Flashcard, type FlashcardReview } from "./domain/flashcards";
 import { calculateEssayScore, type EssayCompetencies } from "./domain/essays";
 import { createNewFsrsCard, formatReviewInterval, previewFsrsIntervals, scheduleFsrsReview, type ReviewGrade } from "./domain/ankiScheduler";
@@ -159,7 +158,6 @@ function Dashboard({disciplines,notebooks,sessions,blocks,flashcards,reviewLimit
   </div>
   <div className="panel"><div className="panel-heading"><div><span className="eyebrow">REVISÕES DO DIA</span><h2>{dueCards} flashcards pendentes</h2></div><Brain/></div><p className="muted-copy">As revisões ficam fora do ciclo de cadernos e têm uma fila própria.</p><button className="button secondary" onClick={()=>onGo("Revisões")}>Iniciar revisões <ArrowRight size={16}/></button></div>
  </div>
- <ImportEdital reload={reload}/>
  <div className="metric-grid">
   <Metric icon={<GraduationCap/>} label="Disciplinas" value={String(disciplines.length)} detail="Em estudo"/>
   <Metric icon={<Clock3/>} label="Tempo estudado" value={fmt(total)} detail="Tempo líquido registrado"/>
