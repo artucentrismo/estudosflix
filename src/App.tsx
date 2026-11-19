@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import MethodWelcome from "./components/MethodWelcome";
+import ImportEdital from "./components/ImportEdital";
 import { reactivateFlashcard, selectDailyReviewQueue, type Flashcard, type FlashcardReview } from "./domain/flashcards";
 import { calculateEssayScore, type EssayCompetencies } from "./domain/essays";
 import { createNewFsrsCard, formatReviewInterval, previewFsrsIntervals, scheduleFsrsReview, type ReviewGrade } from "./domain/ankiScheduler";
@@ -109,7 +110,7 @@ export default function App(){
         {error&&<div className="demo-notice" role="alert">{error}</div>}
         {loading?<div className="panel"><p>Carregando seus dados locais…</p></div>:null}
         {!loading&&section==="Sobre o Método"&&<MethodWelcome onStart={()=>{localStorage.setItem("estudosflix-method-welcome-seen","true");setSection("Disciplinas");}}/>}
-        {!loading&&section==="Início"&&<Dashboard disciplines={disciplines} notebooks={notebooks} sessions={sessions} blocks={blocks} flashcards={flashcards} reviewLimit={reviewLimit} onGo={setSection}/>}
+        {!loading&&section==="Início"&&<Dashboard disciplines={disciplines} notebooks={notebooks} sessions={sessions} blocks={blocks} flashcards={flashcards} reviewLimit={reviewLimit} onGo={setSection} reload={()=>setRefresh(x=>x+1)}/>}
         {!loading&&section==="Estudar"&&<StudyPage disciplines={disciplines} notebooks={notebooks} blocks={blocks} reload={()=>setRefresh(x=>x+1)}/>}
         {!loading&&section==="Plano de Estudos"&&<PlanPage disciplines={disciplines} plans={plans} items={planItems} reload={()=>setRefresh(x=>x+1)}/>}
         {!loading&&section==="Disciplinas"&&<DisciplineWorkspace disciplines={disciplines} notebooks={notebooks} initialSelectedId={disciplineToOpen} editDisciplineId={disciplineToEdit} onOpenHandled={clearDisciplineToOpen} onEditHandled={clearDisciplineToEdit} reload={()=>setRefresh(x=>x+1)}/>}
@@ -132,7 +133,7 @@ export default function App(){
 function Header({eyebrow,title,subtitle}:{eyebrow:string;title:string;subtitle:string}){
  return <div className="welcome-row"><div><div className="eyebrow">{eyebrow}</div><h1>{title}</h1><p>{subtitle}</p></div></div>;
 }
-function Dashboard({disciplines,notebooks,sessions,blocks,flashcards,reviewLimit,onGo}:{disciplines:Row[];notebooks:Row[];sessions:Session[];blocks:StudyBlock[];flashcards:Flashcard[];reviewLimit:number;onGo:(s:Section)=>void}){
+function Dashboard({disciplines,notebooks,sessions,blocks,flashcards,reviewLimit,onGo,reload}:{disciplines:Row[];notebooks:Row[];sessions:Session[];blocks:StudyBlock[];flashcards:Flashcard[];reviewLimit:number;onGo:(s:Section)=>void;reload:()=>void}){
  const [cycles,setCycles]=useState<Record<string,StudyCycleProgress>>({});
  const [generalCycle,setGeneralCycle]=useState<GeneralStudyCycleProgress>();
  const [completedPasses,setCompletedPasses]=useState(0);
@@ -158,6 +159,7 @@ function Dashboard({disciplines,notebooks,sessions,blocks,flashcards,reviewLimit
   </div>
   <div className="panel"><div className="panel-heading"><div><span className="eyebrow">REVISÕES DO DIA</span><h2>{dueCards} flashcards pendentes</h2></div><Brain/></div><p className="muted-copy">As revisões ficam fora do ciclo de cadernos e têm uma fila própria.</p><button className="button secondary" onClick={()=>onGo("Revisões")}>Iniciar revisões <ArrowRight size={16}/></button></div>
  </div>
+ <ImportEdital disciplines={disciplines} reload={reload}/>
  <div className="metric-grid">
   <Metric icon={<GraduationCap/>} label="Disciplinas" value={String(disciplines.length)} detail="Em estudo"/>
   <Metric icon={<Clock3/>} label="Tempo estudado" value={fmt(total)} detail="Tempo líquido registrado"/>
