@@ -289,8 +289,14 @@ body { font-size: 16px; line-height: 1.55; }
 .edital-import-panel{margin:0 0 17px;border-color:color-mix(in srgb,var(--primary) 24%,var(--border));background:linear-gradient(125deg,var(--surface),var(--blue-light) 155%)}
 .edital-import-panel .panel-heading h2{font-size:16px}
 .edital-import-icon{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;background:var(--blue-light);color:var(--primary)}
-.edital-upload-button{position:relative;min-height:42px;width:max-content;max-width:100%;cursor:pointer}
-.edital-upload-button input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.edital-text-label{display:flex;flex-direction:column;gap:7px;margin-top:12px;font-size:12px;font-weight:700;color:var(--title)}
+.edital-textarea{width:100%;min-height:230px;resize:vertical;padding:13px 14px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);font:12px/1.65 ui-monospace,SFMono-Regular,Consolas,monospace;outline:none}
+.edital-textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px color-mix(in srgb,var(--primary) 13%,transparent)}
+.edital-import-preview>.diagnostic-row{margin:0;padding:10px 12px;border:1px solid var(--border);border-radius:9px;background:var(--surface)}
+.edital-import-preview>.diagnostic-row>div{min-width:0}
+.edital-import-preview>.diagnostic-row small{white-space:normal;line-height:1.5}
+.edital-import-preview .button{align-self:flex-start}
+
 .edital-import-preview{display:flex;flex-direction:column;gap:12px;margin-top:15px;padding-top:14px;border-top:1px solid var(--border)}
 .edital-import-counts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
 .edital-import-counts>div{display:flex;flex-direction:column;gap:3px;padding:11px;border-radius:9px;background:var(--surface);border:1px solid var(--border)}
