@@ -283,3 +283,22 @@ body { font-size: 16px; line-height: 1.55; }
 .discipline-edit-icon { width: 54px; height: 54px; min-width: 54px; min-height: 54px; }
 .discipline-edit-icon svg { width: 25px; height: 25px; stroke-width: 2.4; }
 .notebook-inline-form { scroll-margin-top: 100px; }
+
+
+/* Importação de edital a partir da página inicial */
+.edital-import-panel{margin:0 0 17px;border-color:color-mix(in srgb,var(--primary) 24%,var(--border));background:linear-gradient(125deg,var(--surface),var(--blue-light) 155%)}
+.edital-import-panel .panel-heading h2{font-size:16px}
+.edital-import-icon{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;background:var(--blue-light);color:var(--primary)}
+.edital-upload-button{position:relative;min-height:42px;width:max-content;max-width:100%;cursor:pointer}
+.edital-upload-button input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.edital-import-preview{display:flex;flex-direction:column;gap:12px;margin-top:15px;padding-top:14px;border-top:1px solid var(--border)}
+.edital-import-counts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.edital-import-counts>div{display:flex;flex-direction:column;gap:3px;padding:11px;border-radius:9px;background:var(--surface);border:1px solid var(--border)}
+.edital-import-counts strong{font:800 21px system-ui;color:var(--title)}
+.edital-import-counts small{font-size:9px;color:var(--muted)}
+.edital-import-error,.edital-import-success{display:flex;align-items:flex-start;gap:8px;padding:11px;border-radius:9px;font-size:11px;line-height:1.5}
+.edital-import-error{color:var(--red);background:var(--amber-light);border:1px solid color-mix(in srgb,var(--red) 25%,var(--border))}
+.edital-import-error p{margin:5px 0 0}
+.edital-import-success{color:var(--green);background:var(--green-light)}
+.edital-import-footnote{display:block;margin-top:12px;color:var(--muted);font-size:9px;line-height:1.55}
+@media(max-width:760px){.edital-upload-button{width:100%;min-height:45px}.edital-import-counts{gap:6px}.edital-import-counts>div{padding:9px}.edital-import-counts strong{font-size:19px}}
