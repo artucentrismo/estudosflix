@@ -75,6 +75,7 @@ export function getCycleProgressPercent(progress: StudyCycleProgress): number {
 export function completeCycleNotebook(
   progress: StudyCycleProgress,
   updatedAt = new Date().toISOString(),
+  maxNotebooksPerPass?: number,
 ): CycleStep {
   const ids = progress.notebookIds;
   if (ids.length === 0) {
@@ -83,10 +84,13 @@ export function completeCycleNotebook(
   const currentId = ids[Math.min(Math.max(0, progress.currentNotebookIndex), ids.length - 1)];
   const visited = new Set((progress.visitedNotebookIds ?? []).filter(id => ids.includes(id)));
   if (currentId) visited.add(currentId);
-  const completedPass = ids.every(id => visited.has(id));
+  // A pass is the configured number of distinct notebooks, capped by the
+  // number of active notebooks. The cursor keeps rotating across passes.
+  const passLimit = Math.min(ids.length, Math.max(1, Math.floor(maxNotebooksPerPass ?? ids.length)));
+  const completedPass = visited.size >= passLimit;
   const nextVisited = completedPass ? [] : [...visited];
   const currentIndex = ids.indexOf(currentId);
-  let nextIndex = 0;
+  let nextIndex = (currentIndex + 1) % ids.length;
   if (!completedPass) {
     for (let offset = 1; offset <= ids.length; offset += 1) {
       const candidate = (currentIndex + offset) % ids.length;
@@ -102,7 +106,7 @@ export function completeCycleNotebook(
     ...progress,
     visitedNotebookIds: nextVisited,
     passStartedAt: completedPass ? updatedAt : (progress.passStartedAt ?? updatedAt),
-    completedPassHistory: completedPass ? [...passHistory, { number: nextPassNumber, startedAt: progress.passStartedAt ?? updatedAt, completedAt: updatedAt, notebookIds: [...ids] }] : passHistory,
+    completedPassHistory: completedPass ? [...passHistory, { number: nextPassNumber, startedAt: progress.passStartedAt ?? updatedAt, completedAt: updatedAt, notebookIds: [...visited] }] : passHistory,
     currentNotebookIndex: nextIndex,
     completedPasses: nextPassNumber,
     updatedAt,

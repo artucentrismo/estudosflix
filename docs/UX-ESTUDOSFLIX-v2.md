@@ -6,31 +6,30 @@ O EstudosFlix reduz o esforço de planejamento e sempre apresenta um próximo pa
 
 ## Navegação principal
 
-1. **Início** — matéria atual, próximo caderno, progresso do ciclo de cadernos, tempo já investido na matéria e revisões do dia.
-2. **Disciplinas** — área de configuração: cadastrar/editar matérias, definir tempo recomendado individual e cadastrar/editar/reordenar cadernos.
-3. **Ciclo** — visualização somente leitura do ciclo geral por matéria e da sequência de cadernos dentro de cada matéria.
-4. **Revisões** — flashcards vinculados diretamente ao caderno, fora do ciclo.
-5. **Evolução** — domínio, retenção, confiança, questões, passadas, tendência, gargalos, flashcards e histórico.
+1. **Início** — disciplina atual, próximo caderno já selecionado, continuidade de bloco e revisões do dia.
+2. **Disciplinas e ciclo** — uma única área para cadastrar matérias, definir a quantidade de cadernos por passagem, ordenar disciplinas e gerenciar os cadernos dentro de cada matéria. A própria tela apresenta o ciclo geral.
+3. **Revisões** — flashcards vinculados diretamente ao caderno, fora do ciclo.
+4. **Evolução** — domínio geral, retenção, cadernos dominados, questões respondidas, consolidação por disciplina, dificuldades e próxima ação.
 
 Configurações permanecem como acesso secundário.
 
 ## Modelo de dados e interface
 
-- Disciplina agrupa cadernos e possui tempo recomendado personalizado em minutos.
-- Caderno é a unidade operacional e estatística primária. Tem identificador permanente, nome, posição de exibição e indicadores de aprendizagem.
+- Disciplina agrupa cadernos e define a quantidade máxima de cadernos por passagem (padrão: 4).
+- Cada caderno possui duração própria, em múltiplos de 5 minutos (padrão: 15), identificador permanente, nome, posição de exibição e indicadores de aprendizagem.
 - Ciclo não é uma entidade de cadastro. É uma visualização derivada das disciplinas, dos tempos recomendados e da ordem dos cadernos.
 - Flashcards pertencem ao caderno.
 - Assuntos e estruturas legadas podem permanecer no armazenamento para compatibilidade, mas não devem aparecer na experiência principal nem ser exigidos para cadastrar ou estudar um caderno.
 
 ## Ciclo geral por matéria
 
-O ciclo geral trabalha em blocos por matéria, respeitando o tempo recomendado individual de cada disciplina. Exemplo: Constitucional 60 minutos e Português 60 minutos.
+O ciclo geral trabalha em blocos por disciplina, definidos pela quantidade de cadernos que a pessoa deseja estudar em cada passagem.
 
-- O sistema acumula somente o tempo real estudado na matéria atual.
-- Ao atingir o tempo recomendado daquela matéria, avança para a próxima matéria cadastrada com cadernos.
-- Se o estudante parar antes de atingir o tempo, a matéria permanece como ponto de continuidade.
-- Ao concluir a última matéria, inicia uma nova volta geral.
-- Alterar o tempo recomendado afeta o planejamento futuro, não apaga histórico.
+- A disciplina define um limite configurável (1, 2, 4, 5, 6 ou qualquer quantidade desejada).
+- A quantidade efetiva é limitada ao número de cadernos ativos disponíveis; nunca repetir cadernos para preencher o limite.
+- Ao completar a quantidade definida, o sistema avança para a próxima disciplina com cadernos.
+- Se a pessoa interromper antes de completar o bloco da disciplina, retoma do próximo caderno pendente.
+- Cada caderno possui duração própria, em múltiplos de 5 minutos, padrão de 15.
 - Não há obrigação diária, atraso acumulado ou compensação de tempo.
 
 ## Ciclo de cadernos e passadas
@@ -47,12 +46,13 @@ O ciclo geral trabalha em blocos por matéria, respeitando o tempo recomendado i
 ## Disciplinas
 
 Cadastro simples:
-- Nome da matéria.
-- Tempo recomendado (minutos), personalizado por matéria.
+- Nome da disciplina.
+- Quantidade de cadernos por passagem.
+- Duração padrão dos novos cadernos.
 
-Cadastro de caderno:
-- Disciplina.
+Cadastro de caderno dentro da própria disciplina:
 - Nome do caderno.
+- Duração individual em múltiplos de 5 minutos.
 - Numeração automática conforme a ordem.
 
 A área Disciplinas também permite editar nomes, reordenar as matérias do ciclo geral e reordenar cadernos por controles acessíveis de mover para cima/baixo. A aba Ciclo apenas visualiza.
@@ -61,7 +61,7 @@ A área Disciplinas também permite editar nomes, reordenar as matérias do cicl
 
 - Todo flashcard novo deve ter um caderno de origem.
 - Ao registrar questão, o estudante informa: Acertei com certeza, Acertei no chute, Acertei com dúvida ou Errei.
-- Para chute, dúvida ou erro, pode registrar frente e verso do flashcard, que será criado automaticamente ao finalizar a sessão.
+- Para chute, dúvida ou erro, pode registrar frente e verso de um flashcard opcional. A sessão pode ser finalizada sem criar cards.
 - Acerto com certeza não gera flashcard automaticamente.
 - Cards legados sem vínculo inequívoco com um caderno continuam preservados e identificados como legados; não atribuir origem por suposição.
 

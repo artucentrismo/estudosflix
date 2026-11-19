@@ -115,3 +115,12 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--primary); outli
 @media(max-width:720px){.cycle-node{min-height:54px;padding:7px}.cycle-summary{font-size:11px}.notebook-analysis{align-items:flex-start;flex-wrap:wrap}.notebook-analysis .analysis-main{min-width:100%}}
 
 .flashcard-capture{display:grid;gap:9px;padding:12px;background:var(--surface-2);border-radius:9px;margin-top:10px}.flashcard-capture label{display:grid;gap:5px}.flashcard-capture small{font-size:10px;color:var(--muted);line-height:1.5}.difficulty-picks>strong{display:block;width:100%;font-size:10px;color:var(--title);margin-bottom:5px}
+
+/* Refinamentos de entrada numérica e organização da área de disciplinas */
+.number-stepper{display:grid;grid-template-columns:42px minmax(64px,1fr) 42px;gap:7px;align-items:center}
+.number-stepper .button{min-height:40px;padding:8px;font-size:16px}
+.number-stepper input{width:100%;min-width:0;text-align:center;border:1px solid var(--border);background:var(--bg);color:var(--text);border-radius:8px;padding:9px 8px;min-height:40px;font:600 13px system-ui}
+.selected-row{background:var(--surface-2);border-radius:9px;padding-left:9px;padding-right:9px}
+.notebook-inline-form{max-width:680px;margin:18px 0}
+.notebook-inline-form h3{margin:0;color:var(--title);font-size:13px}
+@media(max-width:760px){.number-stepper{grid-template-columns:44px minmax(70px,1fr) 44px}.number-stepper .button{min-height:44px}}

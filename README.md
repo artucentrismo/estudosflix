@@ -16,14 +16,13 @@ O EstudosFlix é um WebApp responsivo, gratuito e multiplataforma para organiza�
 ## Como funciona
 
 - **Início:** apresenta a matéria atual e o próximo caderno, além do tempo investido e das revisões.
-- **Disciplinas:** configura matérias, tempos recomendados personalizados e cadernos.
-- **Ciclo:** visualiza o ciclo geral por matéria e a sequência de cadernos dentro de cada disciplina.
+- **Disciplinas e ciclo:** configura a ordem das matérias, a quantidade de cadernos por passagem e os cadernos dentro de cada disciplina.
 - **Revisões:** organiza flashcards vinculados ao caderno de origem.
 - **Evolução:** acompanha domínio, retenção, confiança, tendências, gargalos e histórico por caderno.
 
-O ciclo geral trabalha em blocos por matéria. Cada disciplina possui seu tempo recomendado; o sistema avança quando esse tempo real é alcançado. Dentro da disciplina, a sequência de cadernos continua de onde o estudante parou.
+O ciclo geral trabalha em blocos por disciplina, definidos pela quantidade de cadernos escolhida pela pessoa. Cada caderno possui duração própria, configurável em múltiplos de cinco minutos (15 minutos por padrão). A fila é circular e contínua: com cinco cadernos e limite quatro, a primeira passagem percorre 1–2–3–4; a próxima começa no 5 e segue 1–2–3. Se a pessoa interromper uma passagem, o próximo acesso retoma no caderno pendente. A quantidade é limitada aos cadernos disponíveis, sem repetição artificial.
 
-Um bloco de referência dura 15 minutos. Pausar preserva o tempo e não conclui uma visita. O estudante também pode encerrar manualmente a atividade de um caderno antes dos 15 minutos; o tempo real é registrado e a visita pode contar para a passada. Uma passada termina quando todos os cadernos ativos da disciplina foram visitados ao menos uma vez.
+Um bloco de referência dura 15 minutos. Pausar preserva o tempo e não conclui uma visita. O estudante também pode encerrar manualmente a atividade de um caderno antes dos 15 minutos; o tempo real é registrado e a visita pode contar para a passada. Uma passagem termina quando a quantidade configurada de cadernos distintos for concluída, limitada ao total disponível.
 
 ## Documentação
 
