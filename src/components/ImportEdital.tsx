@@ -48,7 +48,7 @@ export default function ImportEdital({ reload }: Props) {
           name: item.name,
           notebooksPerPass: 4,
           durationMinutes: item.durationMinutes && item.durationMinutes >= 5 ? Math.round(item.durationMinutes / 5) * 5 : 15,
-          generalOrder: currentDisciplines.length + disciplineIds.size,
+          generalOrder: currentDisciplines.length,
           editalReference: item.reference,
           description: item.description
         });
@@ -59,7 +59,7 @@ export default function ImportEdital({ reload }: Props) {
         const existing = currentNotebooks.find(row => row.disciplineId === disciplineId && clean(row.name) === clean(item.name));
         const saved = existing ?? await notebookRepository.save({
           name: item.name, disciplineId,
-          cycleOrder: currentNotebooks.filter(row => row.disciplineId === disciplineId).length + data.notebooks.filter(other => other.disciplineCode === item.disciplineCode && other.order < item.order).length,
+          cycleOrder: currentNotebooks.filter(row => row.disciplineId === disciplineId).length,
           editalReference: item.reference, editalNotes: item.notes
         });
         notebookIds.set(item.code, saved.id);\n        if (!existing) currentNotebooks.push(saved as ExistingRow);
@@ -99,7 +99,7 @@ export default function ImportEdital({ reload }: Props) {
         subjectsCreated++;
       }
       for (const [code, disciplineId] of disciplineIds) {
-        const ids = data.notebooks.filter(item => item.disciplineCode === code).map(item => notebookIds.get(item.code)!).filter(Boolean);
+        const ids = currentNotebooks.filter(notebook => notebook.disciplineId === disciplineId).sort((a,b)=>(a.cycleOrder??0)-(b.cycleOrder??0)).map(notebook => notebook.id);
         const savedCycle = await settingsRepository.get("studyCycle:" + disciplineId);
         await settingsRepository.set("studyCycle:" + disciplineId, reconcileStudyCycle(
           savedCycle && typeof savedCycle === "object" ? savedCycle as StudyCycleProgress : undefined,
