@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
+import MethodWelcome from "./components/MethodWelcome";
 import { reactivateFlashcard, selectDailyReviewQueue, type Flashcard, type FlashcardReview } from "./domain/flashcards";
 import { createNewFsrsCard, formatReviewInterval, previewFsrsIntervals, scheduleFsrsReview, type ReviewGrade } from "./domain/ankiScheduler";
 import { calculateDomain, calculateRetention, type Attempt, type Exposure } from "./domain/metrics";
 import { clearAllLocalDatabases, importRecordsAtomically, type DatabaseImportData } from "./storage/database";
 import {
-  Activity, ArrowRight, BookOpen, Brain, CalendarDays, Check, Clock3, Compass, Repeat,
+  Activity, ArrowRight, BookOpen, BookOpenText, Brain, CalendarDays, Check, Clock3, Compass, Repeat,
   GraduationCap, LayoutDashboard, Library, Moon, Plus, Settings2, Sun,
   Target, TrendingUp, Upload, Download, Play, Pause, RotateCcw, Trash2, TriangleAlert, Pencil
 } from "lucide-react";
@@ -20,7 +21,7 @@ import {
 import { completeCycleNotebook, getCycleProgressPercent, reconcileStudyCycle, type StudyCycleProgress } from "./domain/studyCycles";
 import { reconcileGeneralStudyCycle, recordGeneralStudyTime, type GeneralStudyCycleProgress } from "./domain/generalStudyCycle";
 
-type Section = "Início" | "Estudar" | "Disciplinas" | "Ciclo" | "Revisões" | "Evolução" | "Assuntos" | "Cadernos" | "Configurações" | "Plano de Estudos" | "Flashcards" | "Histórico" | "Pré-requisitos" | "Diagnóstico" | "Relatórios";
+type Section = "Sobre o Método" | "Início" | "Estudar" | "Disciplinas" | "Ciclo" | "Revisões" | "Evolução" | "Assuntos" | "Cadernos" | "Configurações" | "Plano de Estudos" | "Flashcards" | "Histórico" | "Pré-requisitos" | "Diagnóstico" | "Relatórios";
 type Row = { id:string; name:string; createdAt:string; updatedAt:string; disciplineId?:string; description?:string; parentId?:string; cycleOrder?:number; generalOrder?:number; recommendedMinutes?:number; durationMinutes?:number; notebooksPerPass?:number };
 type Session = { id:string; createdAt:string; updatedAt:string; disciplineId:string; notebookId?:string; notebookIds?:string[]; durationSeconds:number; questions:number; correct:number; date:string };
 type StudySessionDraft = { disciplineId:string; sessionElapsed:number; segments:SegmentDraft[]; visitedNotebookIds:string[]; startedAt:string };
@@ -33,6 +34,7 @@ type PlanRecord = { id:string; createdAt:string; updatedAt:string; name:string }
 type PlanItemRecord = { id:string; createdAt:string; updatedAt:string; planId:string; disciplineId:string; minutes:number; blockCount:number };
 
 const sections: {name:Section; icon:typeof LayoutDashboard}[] = [
+  {name:"Sobre o Método",icon:BookOpenText},
   {name:"Início",icon:LayoutDashboard},
   {name:"Disciplinas",icon:GraduationCap},
   {name:"Ciclo",icon:Repeat},
@@ -47,7 +49,7 @@ const orderDisciplines=(items:Row[])=>{const chronological=items.slice().sort((a
 const ACTIVE_STUDY_BLOCK_SECONDS=import.meta.env.DEV?15:STUDY_BLOCK_SECONDS;
 
 export default function App(){
-  const [section,setSection]=useState<Section>("Início");
+  const [section,setSection]=useState<Section>(()=>localStorage.getItem("estudosflix-method-welcome-seen")==="true"?"Início":"Sobre o Método");
   const [disciplineToOpen,setDisciplineToOpen]=useState<string|undefined>();
   const [disciplineToEdit,setDisciplineToEdit]=useState<string|undefined>();
   const openDiscipline=(id:string)=>{setDisciplineToOpen(id);setSection("Disciplinas");};
@@ -104,6 +106,7 @@ export default function App(){
       <div className="page-content">
         {error&&<div className="demo-notice" role="alert">{error}</div>}
         {loading?<div className="panel"><p>Carregando seus dados locais…</p></div>:null}
+        {!loading&&section==="Sobre o Método"&&<MethodWelcome onStart={()=>{localStorage.setItem("estudosflix-method-welcome-seen","true");setSection("Disciplinas");}}/>}
         {!loading&&section==="Início"&&<Dashboard disciplines={disciplines} notebooks={notebooks} sessions={sessions} blocks={blocks} flashcards={flashcards} reviewLimit={reviewLimit} onGo={setSection}/>}
         {!loading&&section==="Estudar"&&<StudyPage disciplines={disciplines} notebooks={notebooks} blocks={blocks} reload={()=>setRefresh(x=>x+1)}/>}
         {!loading&&section==="Plano de Estudos"&&<PlanPage disciplines={disciplines} plans={plans} items={planItems} reload={()=>setRefresh(x=>x+1)}/>}
@@ -117,7 +120,7 @@ export default function App(){
         
         
         {!loading&&section==="Evolução"&&<EvolutionPage disciplines={disciplines} segments={sessionSegments} sessions={sessions} notebooks={notebooks} cards={flashcards}/>}
-        {!loading&&section==="Configurações"&&<SettingsPage dark={dark} setDark={setDark} reviewLimit={reviewLimit} setReviewLimit={setReviewLimit} reload={()=>setRefresh(x=>x+1)}/>}
+        {!loading&&section==="Configurações"&&<SettingsPage dark={dark} setDark={setDark} reviewLimit={reviewLimit} setReviewLimit={setReviewLimit} reload={()=>setRefresh(x=>x+1)} onLearnMethod={()=>setSection("Sobre o Método")}/>}
       </div>
     </main>
   </div>;
@@ -446,7 +449,7 @@ function HistoryPage({sessions,disciplines,notebooks}:{sessions:Session[];discip
  const total=sessions.reduce((a,s)=>a+s.durationSeconds,0);
  return <><Header eyebrow="ANÁLISE" title="Histórico de sessões" subtitle="Consulte o tempo investido e o desempenho que você registrou."/><div className="metric-grid"><Metric icon={<Clock3/>} label="Tempo total" value={fmt(total)} detail="Somatório registrado"/><Metric icon={<CalendarDays/>} label="Sessões" value={String(sessions.length)} detail="Registros salvos"/><Metric icon={<Target/>} label="Questões" value={String(sessions.reduce((a,s)=>a+s.questions,0))} detail="Questões registradas"/><Metric icon={<Check/>} label="Acertos" value={String(sessions.reduce((a,s)=>a+s.correct,0))} detail="Respostas corretas"/></div><div className="panel"><h2>Registros</h2>{sessions.length===0?<p className="muted-copy">Nenhuma sessão registrada ainda.</p>:sessions.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(s=><div className="diagnostic-row" key={s.id}><span className="diagnostic-dot green-dot"/><div><strong>{disciplines.find(d=>d.id===s.disciplineId)?.name??"Disciplina"} · {s.notebookIds&&s.notebookIds.length>1?"Vários cadernos":notebooks.find(n=>n.id===s.notebookId)?.name??"Caderno"}</strong><small>{new Date(s.date).toLocaleString("pt-BR")} · {fmt(s.durationSeconds)} · {s.questions} questões</small></div><b>{s.questions?Math.round(s.correct/s.questions*100)+"%":"—"}</b></div>)}</div></>;
 }
-function SettingsPage({dark,setDark,reviewLimit,setReviewLimit,reload}:{dark:boolean;setDark:(v:boolean)=>void;reviewLimit:number;setReviewLimit:(n:number)=>void;reload:()=>void}){
+function SettingsPage({dark,setDark,reviewLimit,setReviewLimit,reload,onLearnMethod}:{dark:boolean;setDark:(v:boolean)=>void;reviewLimit:number;setReviewLimit:(n:number)=>void;reload:()=>void;onLearnMethod:()=>void}){
  const [message,setMessage]=useState("");const [clearing,setClearing]=useState(false);
  async function clearData(){if(!confirm("ATENÇÃO: esta ação apagará permanentemente todas as disciplinas, cadernos, sessões, revisões, flashcards, ciclos e configurações armazenados localmente neste navegador. Não será possível desfazer. Se quiser guardar seus dados, baixe um backup antes. Deseja apagar tudo?"))return;setClearing(true);try{await clearAllLocalDatabases();setDark(false);setReviewLimit(30);setMessage("Dados locais apagados. O EstudosFlix será reiniciado.");reload();}catch(e){setMessage(e instanceof Error?e.message:"Não foi possível apagar os dados locais.");}finally{setClearing(false);}}
  async function exportData(){const disciplineRows=await disciplineRepository.list();const [disciplines,notebooks,subjects,notebookSubjects,dependencies,plans,planItems,sessions,sessionSegments,blocks,flashcards,flashcardReviews,theme,reviewLimit,activeStudySession,generalStudyCycle,cycleSettings]=await Promise.all([Promise.resolve(disciplineRows),notebookRepository.list(),subjectRepository.list(),notebookSubjectRepository.list(),subjectDependencyRepository.list(),studyPlanRepository.list(),studyPlanItemRepository.list(),sessionRepository.list(),sessionSegmentRepository.list(),studyBlockRepository.list(),flashcardRepository.list(),flashcardReviewRepository.list(),settingsRepository.get("theme"),settingsRepository.get("reviewLimit"),settingsRepository.get("activeStudySession"),settingsRepository.get("generalStudyCycle"),Promise.all(disciplineRows.map(async d=>({key:"studyCycle:"+d.id,value:await settingsRepository.get("studyCycle:"+d.id)})))]);const stamp=nowIso();const settings=[{key:"theme",value:theme??"light",updatedAt:stamp},{key:"reviewLimit",value:reviewLimit??30,updatedAt:stamp},...(activeStudySession?[{key:"activeStudySession",value:activeStudySession,updatedAt:stamp}]:[]),...(generalStudyCycle?[{key:"generalStudyCycle",value:generalStudyCycle,updatedAt:stamp}]:[]),...cycleSettings.filter(x=>x.value).map(x=>({key:x.key,value:x.value,updatedAt:stamp}))];const payload={format:"estudosflix-backup",version:5,exportedAt:stamp,data:{disciplines,notebooks,subjects,notebookSubjects,dependencies,plans,planItems,sessions,sessionSegments,blocks,flashcards,flashcardReviews,settings}};const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="backup-estudosflix-"+new Date().toISOString().slice(0,10)+".json";a.click();URL.revokeObjectURL(url);setMessage("Backup exportado.");}
@@ -477,5 +480,5 @@ function SettingsPage({dark,setDark,reviewLimit,setReviewLimit,reload}:{dark:boo
    reload();
   }catch(e){setMessage(e instanceof Error?e.message:"Falha ao importar backup.");}
  }
- return <><Header eyebrow="SISTEMA" title="Configurações" subtitle="Ajuste a aparência e cuide dos seus dados locais."/><div className="content-grid"><div className="panel"><h2>Aparência</h2><p className="muted-copy">Escolha o tema que prefere utilizar.</p><button className="button secondary" onClick={()=>setDark(!dark)}>{dark?<Sun size={16}/>:<Moon size={16}/>} Ativar tema {dark?"claro":"escuro"}</button></div><div className="panel"><h2>Backup e restauração</h2><p className="muted-copy">Seus dados ficam neste navegador. Exporte um arquivo para transferir ou guardar uma cópia.</p><div className="recommend-actions"><button className="button primary" onClick={()=>void exportData()}><Download size={16}/> Baixar backup</button><label className="button secondary file-button"><Upload size={16}/> Importar<input type="file" accept="application/json,.json" onChange={e=>void importData(e.target.files?.[0])}/></label></div>{message&&<p className="muted-copy" role="status">{message}</p>}</div></div><div className="panel"><h2>Meta diária de flashcards</h2><p className="muted-copy">Ajuste o volume de revisões conforme seu ritmo.</p><select className="compact-select" value={reviewLimit} onChange={e=>{const value=Number(e.target.value);setReviewLimit(value);void settingsRepository.set("reviewLimit",value);}}><option value={20}>Iniciante · 20 por dia</option><option value={30}>Intermediário · 30 por dia</option><option value={50}>Avançado · 50 por dia</option></select></div><div className="panel"><h2>Apagar dados locais</h2><p className="muted-copy">Apaga os dados de teste e os registros locais deste aplicativo neste navegador. Exporte um backup antes se quiser conservar alguma informação.</p><button className="button secondary danger" type="button" onClick={()=>void clearData()} disabled={clearing}><Trash2 size={16}/>{clearing?"Apagando dados…":"Apagar todos os dados"}</button></div><div className="panel"><h2>Privacidade</h2><p className="muted-copy">O EstudosFlix utiliza armazenamento local do navegador. Limpar os dados do site ou trocar de dispositivo pode apagar ou tornar indisponíveis seus registros. Mantenha backups atualizados.</p></div></>;
+ return <><Header eyebrow="SISTEMA" title="Configurações" subtitle="Ajuste a aparência e cuide dos seus dados locais."/><div className="content-grid"><div className="panel"><h2>Conheça o Método EstudosFlix</h2><p className="muted-copy">Entenda a proposta, conheça as abas e veja como começar a estudar.</p><button className="button primary" type="button" onClick={onLearnMethod}><BookOpenText size={16}/> Conhecer o Método</button></div><div className="panel"><h2>Aparência</h2><p className="muted-copy">Escolha o tema que prefere utilizar.</p><button className="button secondary" onClick={()=>setDark(!dark)}>{dark?<Sun size={16}/>:<Moon size={16}/>} Ativar tema {dark?"claro":"escuro"}</button></div><div className="panel"><h2>Backup e restauração</h2><p className="muted-copy">Seus dados ficam neste navegador. Exporte um arquivo para transferir ou guardar uma cópia.</p><div className="recommend-actions"><button className="button primary" onClick={()=>void exportData()}><Download size={16}/> Baixar backup</button><label className="button secondary file-button"><Upload size={16}/> Importar<input type="file" accept="application/json,.json" onChange={e=>void importData(e.target.files?.[0])}/></label></div>{message&&<p className="muted-copy" role="status">{message}</p>}</div></div><div className="panel"><h2>Meta diária de flashcards</h2><p className="muted-copy">Ajuste o volume de revisões conforme seu ritmo.</p><select className="compact-select" value={reviewLimit} onChange={e=>{const value=Number(e.target.value);setReviewLimit(value);void settingsRepository.set("reviewLimit",value);}}><option value={20}>Iniciante · 20 por dia</option><option value={30}>Intermediário · 30 por dia</option><option value={50}>Avançado · 50 por dia</option></select></div><div className="panel"><h2>Apagar dados locais</h2><p className="muted-copy">Apaga os dados de teste e os registros locais deste aplicativo neste navegador. Exporte um backup antes se quiser conservar alguma informação.</p><button className="button secondary danger" type="button" onClick={()=>void clearData()} disabled={clearing}><Trash2 size={16}/>{clearing?"Apagando dados…":"Apagar todos os dados"}</button></div><div className="panel"><h2>Privacidade</h2><p className="muted-copy">O EstudosFlix utiliza armazenamento local do navegador. Limpar os dados do site ou trocar de dispositivo pode apagar ou tornar indisponíveis seus registros. Mantenha backups atualizados.</p></div></>;
 }
