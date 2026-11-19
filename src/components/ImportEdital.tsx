@@ -2,54 +2,10 @@ import { useMemo, useState } from "react";
 import { AlertCircle, CheckCircle2, FileText, Upload } from "lucide-react";
 import { disciplineRepository, notebookRepository, settingsRepository } from "../storage/repositories";
 import { reconcileStudyCycle, type StudyCycleProgress } from "../domain/studyCycles";
+import { parseEditalText } from "../domain/editalText";
 
 type ExistingRow = { id: string; name: string; disciplineId?: string; cycleOrder?: number };
 type Props = { reload: () => void };
-type ParsedDiscipline = { name: string; notebooks: string[] };
-const clean = (value: string) => value.trim().toLocaleLowerCase("pt-BR");
-
-export function parseEditalText(text: string): { disciplines: ParsedDiscipline[]; errors: string[] } {
-  const disciplines: ParsedDiscipline[] = [];
-  const errors: string[] = [];
-  let current: ParsedDiscipline | undefined;
-  const lines = text.split(/\r?\n/);
-  lines.forEach((raw, index) => {
-    const line = raw.trim();
-    if (!line) return;
-    const discipline = line.match(/^disciplina\s*:\s*(.+)$/i);
-    if (discipline) {
-      const name = discipline[1].trim();
-      if (!name) { errors.push(`Linha ${index + 1}: informe o nome da disciplina.`); current = undefined; return; }
-      if (disciplines.some(item => clean(item.name) === clean(name))) {
-        errors.push(`Linha ${index + 1}: a disciplina "${name}" está repetida.`);
-        current = disciplines.find(item => clean(item.name) === clean(name));
-        return;
-      }
-      current = { name, notebooks: [] };
-      disciplines.push(current);
-      return;
-    }
-    const notebook = line.match(/^caderno(?:\s*\d+)?\s*:\s*(.+)$/i);
-    if (notebook) {
-      if (!current) { errors.push(`Linha ${index + 1}: crie uma disciplina antes de listar cadernos.`); return; }
-      const name = notebook[1].trim();
-      if (!name) { errors.push(`Linha ${index + 1}: informe o nome do caderno.`); return; }
-      if (current.notebooks.some(item => clean(item) === clean(name))) {
-        errors.push(`Linha ${index + 1}: o caderno "${name}" está repetido na disciplina "${current.name}".`);
-        return;
-      }
-      current.notebooks.push(name);
-      return;
-    }
-    errors.push(`Linha ${index + 1}: formato não reconhecido. Use "disciplina: Nome" ou "caderno 01: Nome".`);
-  });
-  disciplines.forEach(item => {
-    if (!item.notebooks.length) errors.push(`A disciplina "${item.name}" não possui nenhum caderno.`);
-  });
-  if (!disciplines.length && !errors.length) errors.push("Cole o edital organizado no formato indicado.");
-  return { disciplines, errors };
-}
-
 export default function ImportEdital({ reload }: Props) {
   const [text, setText] = useState("");
   const [error, setError] = useState("");
@@ -93,7 +49,7 @@ export default function ImportEdital({ reload }: Props) {
           createdNotebooks.push(saved as ExistingRow);
         }
       }
-      for (const [disciplineName, disciplineId] of disciplineIds) {
+      for (const disciplineId of disciplineIds.values()) {
         const ids = [...currentNotebooks, ...createdNotebooks]
           .filter(notebook => notebook.disciplineId === disciplineId)
           .sort((a, b) => (a.cycleOrder ?? 0) - (b.cycleOrder ?? 0))
@@ -103,7 +59,6 @@ export default function ImportEdital({ reload }: Props) {
           savedCycle && typeof savedCycle === "object" ? savedCycle as StudyCycleProgress : undefined,
           disciplineId, ids
         ));
-        void disciplineName;
       }
       setMessage(`Importação concluída: ${parsed.disciplines.length} disciplina(s) e ${notebookCount} caderno(s) identificados. ${createdDisciplines.length} disciplina(s) e ${createdNotebooks.length} caderno(s) novo(s) foram cadastrados neste dispositivo.`);
       setText("");
