@@ -51,4 +51,30 @@ describe("study cycles", () => {
     expect(step.progress.completedPasses).toBe(1);
     expect(step.nextNotebookId).toBe("a");
   });
+  it("rotates continuously when a pass uses fewer notebooks than the discipline has", () => {
+    let progress = createStudyCycleProgress("math", ["a", "b", "c", "d", "e"]);
+    for (const expected of ["a", "b", "c", "d"]) {
+      expect(progress.notebookIds[progress.currentNotebookIndex]).toBe(expected);
+      progress = completeCycleNotebook(progress, undefined, 4).progress;
+    }
+    expect(progress.completedPasses).toBe(1);
+    expect(progress.notebookIds[progress.currentNotebookIndex]).toBe("e");
+    for (const expected of ["e", "a", "b", "c"]) {
+      expect(progress.notebookIds[progress.currentNotebookIndex]).toBe(expected);
+      progress = completeCycleNotebook(progress, undefined, 4).progress;
+    }
+    expect(progress.completedPasses).toBe(2);
+    expect(progress.notebookIds[progress.currentNotebookIndex]).toBe("d");
+  });
+
+  it("caps a configured pass to the number of available notebooks", () => {
+    let progress = createStudyCycleProgress("law", ["a", "b"]);
+    progress = completeCycleNotebook(progress, undefined, 4).progress;
+    expect(progress.completedPasses).toBe(0);
+    const last = completeCycleNotebook(progress, undefined, 4);
+    expect(last.completedPass).toBe(true);
+    expect(last.progress.completedPasses).toBe(1);
+    expect(last.nextNotebookId).toBe("a");
+  });
+
 });
