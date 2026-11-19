@@ -276,3 +276,10 @@ body { font-size: 16px; line-height: 1.55; }
 /* Biblioteca de baralhos */
 .anki-library-panel{margin-top:20px}.anki-deck-tree{margin-left:12px;border-left:1px solid var(--border);padding-left:9px}.anki-deck-row{display:flex;align-items:center;gap:10px;width:100%;border:0;background:transparent;border-radius:9px;padding:10px 12px;text-align:left;color:var(--text);font:inherit;cursor:pointer}.anki-deck-row:hover,.anki-deck-row.selected{background:var(--surface-2)}.anki-deck-row.selected{color:var(--primary)}.anki-deck-row>span{width:20px;color:var(--muted);text-align:center}.anki-deck-row strong{font-size:13px;flex:1}.anki-deck-row small{font-size:11px;color:var(--muted)}.anki-subdeck{margin-left:16px}.anki-subdeck-child{margin-left:25px;width:calc(100% - 25px)}.anki-library-tools{display:flex;align-items:center;gap:10px;margin-top:16px;flex-wrap:wrap}.anki-search{display:flex;align-items:center;gap:8px;flex:1;min-width:220px;padding:0 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface)}.anki-search input{border:0!important;outline:0!important;box-shadow:none!important;flex:1;min-width:0}.anki-import-export{display:flex;gap:9px;flex-wrap:wrap;padding:14px 0;border-bottom:1px solid var(--border)}.anki-file-input{display:none!important}
 @media(max-width:760px){.essay-summary-grid{grid-template-columns:1fr}.essay-score-grid{gap:6px}.essay-score-grid input{padding:9px 5px;font-size:13px}.anki-library-tools{align-items:stretch;flex-direction:column}.anki-search{min-height:44px}.anki-import-export>*{flex:1;justify-content:center}.essay-record-main{align-items:flex-start}}
+
+/* Ajustes de navegação e duração centralizada na disciplina */
+.discipline-workspace-layout .form-panel,
+.discipline-notebook-detail { scroll-margin-top: 88px; }
+.discipline-edit-icon { width: 54px; height: 54px; min-width: 54px; min-height: 54px; }
+.discipline-edit-icon svg { width: 25px; height: 25px; stroke-width: 2.4; }
+.notebook-inline-form { scroll-margin-top: 100px; }
