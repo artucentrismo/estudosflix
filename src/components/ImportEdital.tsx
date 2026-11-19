@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AlertCircle, CheckCircle2, FileSpreadsheet, FileUp, LoaderCircle, Upload } from "lucide-react";
+import { AlertCircle, CheckCircle2, FileSpreadsheet, FileUp, LoaderCircle, Upload, Download, FileText } from "lucide-react";
 import { parseEditalWorkbook, type EditalStructure } from "../domain/editalImport";
 import { disciplineRepository, notebookRepository, notebookSubjectRepository, settingsRepository, subjectRepository } from "../storage/repositories";
 import { reconcileStudyCycle, type StudyCycleProgress } from "../domain/studyCycles";
@@ -121,6 +121,10 @@ export default function ImportEdital({ reload }: Props) {
       <span className="edital-import-icon"><FileSpreadsheet size={21}/></span>
     </div>
     <p className="muted-copy">Já usou o prompt EstudosFlix em uma IA e recebeu a planilha preenchida? Envie o arquivo Excel para cadastrar disciplinas, cadernos e assuntos de uma só vez.</p>
+    <div className="edital-template-downloads">
+      <a className="button secondary" href="./EstudosFlix_Modelo_Organizacao_de_Edital.xlsx" download><Download size={15}/> Baixar planilha-modelo</a>
+      <a className="button secondary" href="./Prompt_Universal_Organizar_Edital_EstudosFlix.txt" download><FileText size={15}/> Baixar prompt da IA</a>
+    </div>
     <label className="button secondary file-button edital-upload-button"><FileUp size={16}/> {fileName || "Selecionar planilha preenchida"}<input type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" disabled={busy} onChange={event=>void selectFile(event.target.files?.[0])}/></label>
     {busy&&<p className="muted-copy" role="status"><LoaderCircle size={15}/> Lendo e organizando os dados…</p>}
     {error&&<p className="edital-import-error" role="alert"><AlertCircle size={16}/>{error}</p>}

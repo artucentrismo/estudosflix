@@ -302,3 +302,15 @@ body { font-size: 16px; line-height: 1.55; }
 .edital-import-success{color:var(--green);background:var(--green-light)}
 .edital-import-footnote{display:block;margin-top:12px;color:var(--muted);font-size:9px;line-height:1.55}
 @media(max-width:760px){.edital-upload-button{width:100%;min-height:45px}.edital-import-counts{gap:6px}.edital-import-counts>div{padding:9px}.edital-import-counts strong{font-size:19px}}
+
+/* Onboarding: primeiro passo e importação de edital como um único conjunto visual */
+.method-onboarding-group{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:stretch;margin-top:38px}
+.method-onboarding-group .method-getting-started{margin:0;display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;gap:12px}
+.method-onboarding-group .method-getting-started .method-start{margin-top:4px}
+.method-onboarding-group .edital-import-panel{margin:0;height:100%;padding:clamp(20px,3vw,30px);display:flex;flex-direction:column;justify-content:flex-start}
+.method-onboarding-group .edital-import-panel .muted-copy{font-size:13px;line-height:1.65}
+.method-onboarding-group .edital-import-footnote{font-size:10px;margin-top:auto;padding-top:16px}
+.edital-template-downloads{display:flex;flex-wrap:wrap;gap:9px;margin:12px 0 14px}
+.edital-template-downloads .button{min-height:40px;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
+@media(max-width:900px){.method-onboarding-group{grid-template-columns:1fr}}
+@media(max-width:760px){.method-onboarding-group{margin-top:30px}.method-onboarding-group .method-getting-started{padding:22px}.edital-template-downloads{flex-direction:column}.edital-template-downloads .button{width:100%}}

@@ -109,7 +109,7 @@ export default function App(){
       <div className="page-content">
         {error&&<div className="demo-notice" role="alert">{error}</div>}
         {loading?<div className="panel"><p>Carregando seus dados locais…</p></div>:null}
-        {!loading&&section==="Sobre o Método"&&<MethodWelcome onStart={()=>{localStorage.setItem("estudosflix-method-welcome-seen","true");setSection("Disciplinas");}}/>}
+        {!loading&&section==="Sobre o Método"&&<MethodWelcome onStart={()=>{localStorage.setItem("estudosflix-method-welcome-seen","true");setSection("Disciplinas");}} reload={()=>setRefresh(x=>x+1)}/>}
         {!loading&&section==="Início"&&<Dashboard disciplines={disciplines} notebooks={notebooks} sessions={sessions} blocks={blocks} flashcards={flashcards} reviewLimit={reviewLimit} onGo={setSection} reload={()=>setRefresh(x=>x+1)}/>}
         {!loading&&section==="Estudar"&&<StudyPage disciplines={disciplines} notebooks={notebooks} blocks={blocks} reload={()=>setRefresh(x=>x+1)}/>}
         {!loading&&section==="Plano de Estudos"&&<PlanPage disciplines={disciplines} plans={plans} items={planItems} reload={()=>setRefresh(x=>x+1)}/>}
