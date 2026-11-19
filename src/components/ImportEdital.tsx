@@ -52,7 +52,8 @@ export default function ImportEdital({ reload }: Props) {
           editalReference: item.reference,
           description: item.description
         });
-        disciplineIds.set(item.code, saved.id);\n        if (!existing) currentDisciplines.push(saved as ExistingRow);
+        disciplineIds.set(item.code, saved.id);
+        if (!existing) currentDisciplines.push(saved as ExistingRow);
       }
       for (const item of data.notebooks) {
         const disciplineId = disciplineIds.get(item.disciplineCode)!;
@@ -62,7 +63,8 @@ export default function ImportEdital({ reload }: Props) {
           cycleOrder: currentNotebooks.filter(row => row.disciplineId === disciplineId).length,
           editalReference: item.reference, editalNotes: item.notes
         });
-        notebookIds.set(item.code, saved.id);\n        if (!existing) currentNotebooks.push(saved as ExistingRow);
+        notebookIds.set(item.code, saved.id);
+        if (!existing) currentNotebooks.push(saved as ExistingRow);
       }
       for (const item of data.notebooks) {
         if (!item.parentCode) continue;
