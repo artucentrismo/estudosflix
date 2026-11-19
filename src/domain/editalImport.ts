@@ -81,9 +81,26 @@ function readSheet(xml: Document, shared: string[]): string[][] {
   }
   return rows;
 }
-function rowsAsObjects(rows: string[][]): SheetRow[] {
-  const headers = (rows[3] ?? []).map(value => value.trim());
-  return rows.slice(4).filter((row): row is string[] => Boolean(row)).map(row => Object.fromEntries(headers.map((header, index) => [header, row[index] ?? ""]))).filter(row => Object.values(row).some(value => value.trim()));
+function normalizeHeader(value: string): string {
+  return value.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLocaleLowerCase("pt-BR").replace(/[^a-z0-9]+/g, " ").trim();
+}
+function rowsAsObjects(rows: string[][], aliases: Record<string, string[]>): SheetRow[] {
+  const lookup = new Map<string, string>();
+  for (const [canonical, names] of Object.entries(aliases)) {
+    for (const name of [canonical, ...names]) lookup.set(normalizeHeader(name), canonical);
+  }
+  let headerIndex = -1;
+  let headers: string[] = [];
+  let bestScore = 0;
+  for (let index = 0; index < Math.min(rows.length, 15); index++) {
+    const candidate = (rows[index] ?? []).map(value => lookup.get(normalizeHeader(value)) ?? "");
+    const score = candidate.filter(Boolean).length;
+    if (score > bestScore) { bestScore = score; headerIndex = index; headers = candidate; }
+  }
+  if (headerIndex < 0 || bestScore < 2) return [];
+  return rows.slice(headerIndex + 1).filter((row): row is string[] => Boolean(row))
+    .map(row => Object.fromEntries(headers.map((header, index) => [header, row[index] ?? ""]).filter(([header]) => Boolean(header))))
+    .filter(row => Object.values(row).some(value => value.trim()));
 }
 function num(value: string, fallback: number): number {
   const parsed = Number(value.replace(",", "."));
@@ -113,9 +130,21 @@ export async function parseEditalWorkbook(file: File): Promise<EditalStructure> 
   const required = ["Disciplinas", "Cadernos", "Assuntos"];
   const missing = required.filter(name => !sheets.has(name));
   if (missing.length) throw new Error("A planilha está sem estas abas obrigatórias: " + missing.join(", ") + ". Use o modelo oficial.");
-  const dRows = rowsAsObjects(sheets.get("Disciplinas")!);
-  const nRows = rowsAsObjects(sheets.get("Cadernos")!);
-  const aRows = rowsAsObjects(sheets.get("Assuntos")!);
+  const dRows = rowsAsObjects(sheets.get("Disciplinas")!, {
+    "Código da disciplina": ["Código"], "Nome da disciplina": ["Disciplina"], "Ordem": ["Posição"],
+    "Tempo recomendado (min)": ["Tempo recomendado"], "Descrição / observações": ["Descrição", "Observações"],
+    "Referência no edital": ["Referência"]
+  });
+  const nRows = rowsAsObjects(sheets.get("Cadernos")!, {
+    "Código do caderno": ["Código"], "Código da disciplina": [], "Nome do caderno": ["Caderno"], "Ordem": ["Posição"],
+    "Código do caderno pai (opcional)": ["Código do caderno pai", "Caderno pai"],
+    "Observações": ["Notas"], "Referência no edital": ["Referência"]
+  });
+  const aRows = rowsAsObjects(sheets.get("Assuntos")!, {
+    "Código do assunto": ["Código"], "Código da disciplina": [], "Código do caderno": [], "Assunto organizado": ["Assunto"],
+    "Ordem": ["Posição"], "Texto do edital (fiel)": ["Texto do edital"], "Detalhamento / subtópicos": ["Detalhamento", "Subtópicos"],
+    "Prioridade sugerida": ["Prioridade"], "Tipo": [], "Página / item do edital": ["Referência", "Página / item"], "Observações": ["Notas"]
+  });
   const disciplines = dRows.map(row => ({
     code: row["Código da disciplina"].trim(), name: row["Nome da disciplina"].trim(), order: num(row["Ordem"], 9999),
     durationMinutes: num(row["Tempo recomendado (min)"], 0) || undefined,
