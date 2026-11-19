@@ -99,7 +99,7 @@ function rowsAsObjects(rows: string[][], aliases: Record<string, string[]>): She
   }
   if (headerIndex < 0 || bestScore < 2) return [];
   return rows.slice(headerIndex + 1).filter((row): row is string[] => Boolean(row))
-    .map(row => Object.fromEntries(headers.map((header, index) => [header, row[index] ?? ""]).filter(([header]) => Boolean(header))))
+    .map(row => Object.fromEntries(headers.map((header, index) => [header, row[index] ?? ""]).filter(([header]) => Boolean(header))) as SheetRow)
     .filter(row => Object.values(row).some(value => value.trim()));
 }
 function num(value: string, fallback: number): number {
