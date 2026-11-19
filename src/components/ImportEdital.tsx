@@ -94,7 +94,7 @@ export default function ImportEdital({ reload }: Props) {
       <div><span className="eyebrow">COMECE MAIS RÁPIDO</span><h2>Importar edital com ajuda da IA</h2></div>
       <span className="edital-import-icon"><FileText size={21}/></span>
     </div>
-    <p className="muted-copy">Copie o prompt, peça à IA para organizar seu edital e cole a resposta no campo abaixo.</p>
+    <p className="muted-copy">Copie o prompt e cole-o na IA junto com o edital completo. Depois, cole a resposta que ela gerar no campo abaixo.</p>
 
     <div className="edital-text-instructions">
       <div className="edital-instruction-title"><Sparkles size={16}/> 1. Copie o prompt para a IA</div>
