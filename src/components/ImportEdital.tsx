@@ -47,7 +47,7 @@ export default function ImportEdital({ reload }: Props) {
             cycleOrder: currentNotebooks.filter(row => row.disciplineId === disciplineId).length
               + createdNotebooks.filter(row => row.disciplineId === disciplineId).length
           });
-          createdNotebooks.push(saved as ExistingRow);
+          createdNotebooks.push(saved as unknown as ExistingRow);
         }
       }
       for (const disciplineId of disciplineIds.values()) {
