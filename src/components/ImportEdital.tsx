@@ -6,6 +6,7 @@ import { parseEditalText } from "../domain/editalText";
 
 type ExistingRow = { id: string; name: string; disciplineId?: string; cycleOrder?: number };
 type Props = { reload: () => void };
+const clean = (value: string) => value.trim().toLocaleLowerCase("pt-BR");
 export default function ImportEdital({ reload }: Props) {
   const [text, setText] = useState("");
   const [error, setError] = useState("");
@@ -32,7 +33,7 @@ export default function ImportEdital({ reload }: Props) {
           generalOrder: currentDisciplines.length + createdDisciplines.length
         });
         disciplineIds.set(clean(item.name), saved.id);
-        if (!existing) createdDisciplines.push(saved as ExistingRow);
+        if (!existing) createdDisciplines.push(saved as unknown as ExistingRow);
       }
       for (const item of parsed.disciplines) {
         const disciplineId = disciplineIds.get(clean(item.name))!;
