@@ -18,24 +18,26 @@ caderno 03: Literatura
 disciplina: História
 caderno 01: História do Brasil
 caderno 02: História Geral`);
-    expect(result.errors).toEqual([]);
+    expect(result.ignoredLines).toBe(0);
     expect(result.disciplines).toHaveLength(3);
     expect(result.disciplines.map(item => item.notebooks.length)).toEqual([5, 3, 2]);
   });
 
   it("aceita espaços e numeração opcional no rótulo do caderno", () => {
     const result = parseEditalText(" disciplina : Física \n\n Caderno: Mecânica \n caderno 12: Óptica ");
-    expect(result.errors).toEqual([]);
     expect(result.disciplines[0].notebooks).toEqual(["Mecânica", "Óptica"]);
   });
 
-  it("aponta caderno sem disciplina e linhas fora do padrão", () => {
-    const result = parseEditalText("caderno 01: Álgebra\nlinha inválida");
-    expect(result.errors).toHaveLength(2);
+  it("ignora linhas fora do padrão e continua importando o conteúdo válido", () => {
+    const result = parseEditalText("Edital 2026\nDisciplina: Matemática\n- conteúdo geral\nCaderno 01: Álgebra\nobservação\nDisciplina: Português\nCaderno: Gramática");
+    expect(result.disciplines).toHaveLength(2);
+    expect(result.ignoredLines).toBe(3);
   });
 
-  it("impede disciplinas e cadernos duplicados", () => {
-    const result = parseEditalText("disciplina: Matemática\ncaderno 01: Álgebra\ncaderno 02: Álgebra");
-    expect(result.errors.some(error => error.includes("repetido"))).toBe(true);
+  it("ignora cadernos repetidos e disciplinas sem cadernos válidos", () => {
+    const result = parseEditalText("disciplina: Matemática\ncaderno 01: Álgebra\ncaderno 02: Álgebra\ndisciplina: Sem conteúdo");
+    expect(result.disciplines).toHaveLength(1);
+    expect(result.disciplines[0].notebooks).toEqual(["Álgebra"]);
+    expect(result.ignoredLines).toBe(2);
   });
 });
