@@ -63,6 +63,7 @@ export const sessionSegmentRepository = createRepository("sessionSegments");
 export const studyBlockRepository = createRepository<StudyBlock>("studyBlocks");
 export const flashcardRepository = createRepository("flashcards");
 export const flashcardReviewRepository = createRepository("flashcardReviews");
+export const essayRepository = createRepository("essays");
 export const settingsRepository = createSettingRepository();
 
 export { createRecordId, createTimestamps };
