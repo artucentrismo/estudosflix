@@ -314,3 +314,11 @@ body { font-size: 16px; line-height: 1.55; }
 .edital-template-downloads .button{min-height:40px;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
 @media(max-width:900px){.method-onboarding-group{grid-template-columns:1fr}}
 @media(max-width:760px){.method-onboarding-group{margin-top:30px}.method-onboarding-group .method-getting-started{padding:22px}.edital-template-downloads{flex-direction:column}.edital-template-downloads .button{width:100%}}
+
+
+/* Gradiente azul e branco discreto, invertido entre os temas */
+.soft-gradient-panel{background:linear-gradient(125deg,var(--surface) 0%,var(--blue-light) 100%)}
+:root[data-theme=dark] .soft-gradient-panel{background:linear-gradient(125deg,var(--blue-light) 0%,var(--surface) 100%)}
+/* Redações: formulário em largura total e separação clara do histórico */
+.essay-form{max-width:none;width:100%;margin:0 0 22px}
+.essay-history{margin-top:0}
