@@ -5,10 +5,10 @@ import { disciplineRepository, notebookRepository, notebookSubjectRepository, se
 import { reconcileStudyCycle, type StudyCycleProgress } from "../domain/studyCycles";
 
 type ExistingRow = { id: string; name: string; disciplineId?: string; cycleOrder?: number };
-type Props = { disciplines: ExistingRow[]; notebooks: ExistingRow[]; reload: () => void };
+type Props = { reload: () => void };
 const clean = (value: string) => value.trim().toLocaleLowerCase("pt-BR");
 
-export default function ImportEdital({ disciplines, notebooks, reload }: Props) {
+export default function ImportEdital({ reload }: Props) {
   const [fileName, setFileName] = useState("");
   const [data, setData] = useState<EditalStructure | null>(null);
   const [error, setError] = useState("");
@@ -52,7 +52,7 @@ export default function ImportEdital({ disciplines, notebooks, reload }: Props) 
           editalReference: item.reference,
           description: item.description
         });
-        disciplineIds.set(item.code, saved.id);
+        disciplineIds.set(item.code, saved.id);\n        if (!existing) currentDisciplines.push(saved as ExistingRow);
       }
       for (const item of data.notebooks) {
         const disciplineId = disciplineIds.get(item.disciplineCode)!;
@@ -62,7 +62,7 @@ export default function ImportEdital({ disciplines, notebooks, reload }: Props) 
           cycleOrder: currentNotebooks.filter(row => row.disciplineId === disciplineId).length + data.notebooks.filter(other => other.disciplineCode === item.disciplineCode && other.order < item.order).length,
           editalReference: item.reference, editalNotes: item.notes
         });
-        notebookIds.set(item.code, saved.id);
+        notebookIds.set(item.code, saved.id);\n        if (!existing) currentNotebooks.push(saved as ExistingRow);
       }
       for (const item of data.notebooks) {
         if (!item.parentCode) continue;
