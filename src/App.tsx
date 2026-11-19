@@ -350,7 +350,7 @@ function AnalysisPage({subjects,segments,dependencies,mode}:{subjects:Row[];segm
  <p className="muted-copy small-copy">Bloqueios usam o índice (100 − domínio do pré-requisito) × intensidade da dependência. A confirmação exige pelo menos 30 questões e duas exposições válidas; ausência de dados nunca é tratada como domínio saudável.</p>
  </>;
 }
-function EvolutionPage({disciplines,segments,notebooks,cards}:{disciplines:Row[];segments:SegmentRecord[];sessions:Session[];notebooks:Row[];cards:Flashcard[]}){
+function EvolutionPage({disciplines,segments,sessions,notebooks,cards}:{disciplines:Row[];segments:SegmentRecord[];sessions:Session[];notebooks:Row[];cards:Flashcard[]}){
  const [cycles,setCycles]=useState<Record<string,StudyCycleProgress>>({});
  useEffect(()=>{let alive=true;void Promise.all(disciplines.map(async d=>[d.id,await settingsRepository.get("studyCycle:"+d.id)] as const)).then(rows=>{if(!alive)return;const next:Record<string,StudyCycleProgress>={};for(const [id,value] of rows)if(value&&typeof value==="object")next[id]=value as StudyCycleProgress;setCycles(next);});return()=>{alive=false;};},[disciplines,notebooks]);
  const notebookStats=notebooks.map(notebook=>{
