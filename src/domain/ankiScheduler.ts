@@ -24,11 +24,12 @@ export type FsrsReviewSnapshot = {
 };
 
 const scheduler = fsrs();
-const ratings: Record<ReviewGrade, Rating> = {
-  again: Rating.Again,
-  hard: Rating.Hard,
-  good: Rating.Good,
-  easy: Rating.Easy,
+type FsrsGrade = Parameters<typeof scheduler.next>[2];
+const ratings: Record<ReviewGrade, FsrsGrade> = {
+  again: Rating.Again as FsrsGrade,
+  hard: Rating.Hard as FsrsGrade,
+  good: Rating.Good as FsrsGrade,
+  easy: Rating.Easy as FsrsGrade,
 };
 
 export function createNewFsrsCard(now = new Date()): FsrsCardSnapshot {
@@ -63,7 +64,7 @@ export function previewFsrsIntervals(snapshot?: FsrsCardSnapshot, now = new Date
   const card = hydrateFsrsCard(snapshot, now);
   const preview = scheduler.repeat(card, now);
   return (Object.keys(ratings) as ReviewGrade[]).map(rating => {
-    const candidate = preview[ratings[rating]];
+    const candidate = (preview as unknown as Record<FsrsGrade, { card: FsrsCard }>)[ratings[rating]];
     return {
       rating,
       due: candidate.card.due.toISOString(),
