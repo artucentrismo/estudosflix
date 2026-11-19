@@ -52,3 +52,11 @@ VALIDAÇÃO ANTES DE ENTREGAR
 
 INSTRUÇÃO FINAL
 Se o usuário ainda não enviou o edital, solicite o arquivo PDF ou texto integral. Depois de recebê-lo, faça a organização e gere o Excel preenchido. A planilha deve conter somente informações sustentadas pelo edital e sinalizações claras para tudo que depender de interpretação.
+
+
+COMPATIBILIDADE COM O IMPORTADOR ATUAL
+Para garantir a importação, prefira preencher a planilha-modelo oficial sem alterar nomes de abas, cabeçalhos ou a posição das colunas. Os cabeçalhos oficiais são:
+- Disciplinas: Código da disciplina | Nome da disciplina | Ordem | Tempo recomendado (min) | Descrição / observações | Referência no edital
+- Cadernos: Código do caderno | Código da disciplina | Nome do caderno | Ordem | Código do caderno pai (opcional) | Referência no edital | Observações
+- Assuntos: Código do assunto | Código da disciplina | Código do caderno | Assunto organizado | Ordem | Texto do edital (fiel) | Detalhamento / subtópicos | Prioridade sugerida | Tipo | Página / item do edital | Observações
+Se você precisar criar uma planilha do zero, use esses cabeçalhos exatamente na primeira linha de cada aba. Não use apenas “Código”, “Disciplina”, “Caderno” ou “Assunto” como cabeçalho quando o modelo oficial estiver disponível.
