@@ -83,7 +83,7 @@ function readSheet(xml: Document, shared: string[]): string[][] {
 }
 function rowsAsObjects(rows: string[][]): SheetRow[] {
   const headers = (rows[3] ?? []).map(value => value.trim());
-  return rows.slice(4).map(row => Object.fromEntries(headers.map((header, index) => [header, row[index] ?? ""]))).filter(row => Object.values(row).some(value => value.trim()));
+  return rows.slice(4).filter((row): row is string[] => Boolean(row)).map(row => Object.fromEntries(headers.map((header, index) => [header, row[index] ?? ""]))).filter(row => Object.values(row).some(value => value.trim()));
 }
 function num(value: string, fallback: number): number {
   const parsed = Number(value.replace(",", "."));
