@@ -289,8 +289,14 @@ body { font-size: 16px; line-height: 1.55; }
 .edital-import-panel{margin:0 0 17px;border-color:color-mix(in srgb,var(--primary) 24%,var(--border));background:linear-gradient(125deg,var(--surface),var(--blue-light) 155%)}
 .edital-import-panel .panel-heading h2{font-size:16px}
 .edital-import-icon{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;background:var(--blue-light);color:var(--primary)}
-.edital-upload-button{position:relative;min-height:42px;width:max-content;max-width:100%;cursor:pointer}
-.edital-upload-button input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.edital-text-label{display:flex;flex-direction:column;gap:7px;margin-top:12px;font-size:12px;font-weight:700;color:var(--title)}
+.edital-textarea{width:100%;min-height:230px;resize:vertical;padding:13px 14px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);font:12px/1.65 ui-monospace,SFMono-Regular,Consolas,monospace;outline:none}
+.edital-textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px color-mix(in srgb,var(--primary) 13%,transparent)}
+.edital-import-preview>.diagnostic-row{margin:0;padding:10px 12px;border:1px solid var(--border);border-radius:9px;background:var(--surface)}
+.edital-import-preview>.diagnostic-row>div{min-width:0}
+.edital-import-preview>.diagnostic-row small{white-space:normal;line-height:1.5}
+.edital-import-preview .button{align-self:flex-start}
+
 .edital-import-preview{display:flex;flex-direction:column;gap:12px;margin-top:15px;padding-top:14px;border-top:1px solid var(--border)}
 .edital-import-counts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
 .edital-import-counts>div{display:flex;flex-direction:column;gap:3px;padding:11px;border-radius:9px;background:var(--surface);border:1px solid var(--border)}
@@ -313,7 +319,7 @@ body { font-size: 16px; line-height: 1.55; }
 .edital-template-downloads{display:flex;flex-wrap:wrap;gap:9px;margin:12px 0 14px}
 .edital-template-downloads .button{min-height:40px;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
 @media(max-width:900px){.method-onboarding-group{grid-template-columns:1fr}}
-@media(max-width:760px){.method-onboarding-group{margin-top:30px}.method-onboarding-group .method-getting-started{padding:22px}.edital-template-downloads{flex-direction:column}.edital-template-downloads .button{width:100%}}
+@media(max-width:760px){.method-onboarding-group{margin-top:30px}.method-onboarding-group .method-getting-started{padding:22px}}
 
 
 /* Refinamento de largura e ritmo vertical: Redações e Configurações */
@@ -365,3 +371,28 @@ body { font-size: 16px; line-height: 1.55; }
   .settings-grid > .panel:last-child { grid-column: auto; }
   .settings-grid > .panel .recommend-actions { width: 100%; flex-wrap: wrap; gap: 10px; }
 }
+
+/* Importador de edital por texto: instruções, exemplo e prévia */
+.edital-text-instructions{display:grid;gap:8px;padding:14px 15px;margin:12px 0 14px;border:1px solid var(--border);border-radius:12px;background:var(--surface-2)}
+.edital-instruction-title{display:flex;align-items:center;gap:8px;color:var(--title);font-size:12px;font-weight:800}
+.edital-instruction-title svg{color:var(--primary)}
+.edital-text-instructions>p{margin:0;color:var(--muted);font-size:11px;line-height:1.5}
+.edital-format-example{display:grid;gap:3px;padding:10px 12px;border-radius:8px;background:var(--surface);border:1px solid var(--border);font:11px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--text)}
+.edital-format-example .edital-example-gap{margin-top:7px}
+.edital-example-button{justify-self:start;min-height:34px;font-size:11px}
+.edital-text-label{display:flex;flex-direction:column;gap:7px;margin-top:2px;font-size:12px;font-weight:800;color:var(--title)}
+.edital-textarea{width:100%;min-height:230px;resize:vertical;padding:13px 14px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);font:12px/1.65 ui-monospace,SFMono-Regular,Consolas,monospace;outline:none}
+.edital-textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px color-mix(in srgb,var(--primary) 13%,transparent)}
+.edital-import-preview{display:grid;gap:9px;margin-top:14px}
+.edital-preview-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;color:var(--title);font-size:12px}
+.edital-preview-heading span{color:var(--muted);font-size:10px;font-weight:600}
+.edital-import-preview>.diagnostic-row{margin:0;padding:10px 12px;border:1px solid var(--border);border-radius:9px;background:var(--surface)}
+.edital-import-preview>.diagnostic-row>div{min-width:0}
+.edital-import-preview>.diagnostic-row small{white-space:normal;line-height:1.5}
+.edital-import-actions{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:4px}
+.edital-import-actions .button{min-height:40px}
+.edital-import-error,.edital-import-success{display:flex;align-items:flex-start;gap:8px;padding:11px 12px;border-radius:9px;font-size:11px;line-height:1.5}
+.edital-import-error{color:var(--red);background:var(--amber-light)}
+.edital-import-success{color:var(--green);background:var(--green-light)}
+.edital-import-error p{margin:4px 0 0}
+@media(max-width:600px){.edital-preview-heading{align-items:flex-start;flex-direction:column;gap:3px}.edital-import-actions{display:grid;grid-template-columns:1fr}.edital-import-actions .button{width:100%;justify-content:center}.edital-example-button{width:100%;justify-content:center}}

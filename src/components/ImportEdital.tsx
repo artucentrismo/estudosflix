@@ -1,140 +1,140 @@
-import { useState } from "react";
-import { AlertCircle, CheckCircle2, FileSpreadsheet, FileUp, LoaderCircle, Upload, Download, FileText } from "lucide-react";
-import { parseEditalWorkbook, type EditalStructure } from "../domain/editalImport";
-import { disciplineRepository, notebookRepository, notebookSubjectRepository, settingsRepository, subjectRepository } from "../storage/repositories";
+import { useMemo, useState } from "react";
+import { AlertCircle, CheckCircle2, ClipboardList, FileText, Sparkles, Trash2, Upload } from "lucide-react";
+import { disciplineRepository, notebookRepository, settingsRepository } from "../storage/repositories";
 import { reconcileStudyCycle, type StudyCycleProgress } from "../domain/studyCycles";
+import { parseEditalText } from "../domain/editalText";
 
 type ExistingRow = { id: string; name: string; disciplineId?: string; cycleOrder?: number };
 type Props = { reload: () => void };
 const clean = (value: string) => value.trim().toLocaleLowerCase("pt-BR");
+const example = `disciplina: Matemática
+caderno 01: Aritmética
+caderno 02: Álgebra
+caderno 03: Geometria
+caderno 04: Estatística
+caderno 05: Probabilidade
+
+disciplina: Português
+caderno 01: Interpretação de texto
+caderno 02: Gramática
+caderno 03: Literatura
+
+disciplina: História
+caderno 01: História do Brasil
+caderno 02: História Geral`;
 
 export default function ImportEdital({ reload }: Props) {
-  const [fileName, setFileName] = useState("");
-  const [data, setData] = useState<EditalStructure | null>(null);
+  const [text, setText] = useState("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const parsed = useMemo(() => parseEditalText(text), [text]);
+  const notebookCount = parsed.disciplines.reduce((total, item) => total + item.notebooks.length, 0);
+  const canImport = parsed.disciplines.length > 0 && notebookCount > 0 && parsed.errors.length === 0 && !busy;
 
-  async function selectFile(file?: File) {
-    setError(""); setMessage(""); setData(null);
-    if (!file) return;
-    setFileName(file.name);
-    if (!file.name.toLowerCase().endsWith(".xlsx")) {
-      setError("Envie a planilha Excel (.xlsx) preenchida com o modelo oficial do EstudosFlix.");
-      return;
-    }
-    setBusy(true);
-    try {
-      const parsed = await parseEditalWorkbook(file);
-      setData(parsed);
-      if (!parsed.disciplines.length) setError("A aba Disciplinas está vazia. Preencha a planilha antes de importar.");
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Não foi possível ler a planilha.");
-    } finally { setBusy(false); }
+  function updateText(value: string) {
+    setText(value);
+    setError("");
+    setMessage("");
   }
 
   async function importStructure() {
-    if (!data || data.warnings.length || !data.disciplines.length) return;
+    if (!canImport) return;
     setBusy(true); setError(""); setMessage("");
     try {
-      const disciplineIds = new Map<string, string>();
-      const notebookIds = new Map<string, string>();
       const currentDisciplines = await disciplineRepository.list() as unknown as ExistingRow[];
       const currentNotebooks = await notebookRepository.list() as unknown as ExistingRow[];
-      const sortedDisciplines = [...data.disciplines].sort((a,b)=>a.order-b.order);
-      for (const item of sortedDisciplines) {
+      const disciplineIds = new Map<string, string>();
+      const createdDisciplines: ExistingRow[] = [];
+      const createdNotebooks: ExistingRow[] = [];
+      for (const item of parsed.disciplines) {
         const existing = currentDisciplines.find(row => clean(row.name) === clean(item.name));
         const saved = existing ?? await disciplineRepository.save({
           name: item.name,
           notebooksPerPass: 4,
-          durationMinutes: item.durationMinutes && item.durationMinutes >= 5 ? Math.round(item.durationMinutes / 5) * 5 : 15,
-          generalOrder: currentDisciplines.length,
-          editalReference: item.reference,
-          description: item.description
+          durationMinutes: 15,
+          generalOrder: currentDisciplines.length + createdDisciplines.length
         });
-        disciplineIds.set(item.code, saved.id);
-        if (!existing) currentDisciplines.push(saved as ExistingRow);
+        disciplineIds.set(clean(item.name), saved.id);
+        if (!existing) createdDisciplines.push(saved as unknown as ExistingRow);
       }
-      for (const item of data.notebooks) {
-        const disciplineId = disciplineIds.get(item.disciplineCode)!;
-        const existing = currentNotebooks.find(row => row.disciplineId === disciplineId && clean(row.name) === clean(item.name));
-        const saved = existing ?? await notebookRepository.save({
-          name: item.name, disciplineId,
-          cycleOrder: currentNotebooks.filter(row => row.disciplineId === disciplineId).length,
-          editalReference: item.reference, editalNotes: item.notes
-        });
-        notebookIds.set(item.code, saved.id);
-        if (!existing) currentNotebooks.push(saved as ExistingRow);
-      }
-      for (const item of data.notebooks) {
-        if (!item.parentCode) continue;
-        const childId = notebookIds.get(item.code);
-        const parentId = notebookIds.get(item.parentCode);
-        if (childId && parentId && childId !== parentId) {
-          const child = await notebookRepository.get(childId);
-          if (child && !(child as unknown as ExistingRow & { parentId?: string }).parentId) {
-            await notebookRepository.save({ ...child, parentId });
-          }
+      for (const item of parsed.disciplines) {
+        const disciplineId = disciplineIds.get(clean(item.name))!;
+        for (const notebookName of item.notebooks) {
+          const existing = currentNotebooks.find(row => row.disciplineId === disciplineId && clean(row.name) === clean(notebookName))
+            ?? createdNotebooks.find(row => row.disciplineId === disciplineId && clean(row.name) === clean(notebookName));
+          if (existing) continue;
+          const saved = await notebookRepository.save({
+            name: notebookName,
+            disciplineId,
+            cycleOrder: currentNotebooks.filter(row => row.disciplineId === disciplineId).length
+              + createdNotebooks.filter(row => row.disciplineId === disciplineId).length
+          });
+          createdNotebooks.push(saved as unknown as ExistingRow);
         }
       }
-      const existingSubjects = await subjectRepository.list() as unknown as ExistingRow[];
-      const existingMappings = await notebookSubjectRepository.list() as unknown as Array<{id:string; notebookId:string; subjectId:string}>;
-      let subjectsCreated = 0;
-      for (const item of data.subjects) {
-        const disciplineId = disciplineIds.get(item.disciplineCode)!;
-        const notebookId = notebookIds.get(item.notebookCode)!;
-        const duplicate = existingSubjects.find(subject => subject.disciplineId === disciplineId && clean(subject.name) === clean(item.name)
-          && existingMappings.some(mapping => mapping.subjectId === subject.id && mapping.notebookId === notebookId));
-        if (duplicate) continue;
-        const description = [
-          item.editalText ? "Texto do edital: " + item.editalText : "",
-          item.details ? "Detalhamento: " + item.details : "",
-          item.priority ? "Prioridade sugerida: " + item.priority : "",
-          item.type ? "Tipo: " + item.type : "",
-          item.reference ? "Referência: " + item.reference : "",
-          item.notes ? "Observações: " + item.notes : ""
-        ].filter(Boolean).join("\n");
-        const subject = await subjectRepository.save({ name: item.name, description, disciplineId, editalCode: item.code, editalOrder: item.order });
-        await notebookSubjectRepository.save({ notebookId, subjectId: subject.id });
-        existingSubjects.push(subject as unknown as ExistingRow);
-        existingMappings.push({ id: "", notebookId, subjectId: subject.id });
-        subjectsCreated++;
-      }
-      for (const [code, disciplineId] of disciplineIds) {
-        const ids = currentNotebooks.filter(notebook => notebook.disciplineId === disciplineId).sort((a,b)=>(a.cycleOrder??0)-(b.cycleOrder??0)).map(notebook => notebook.id);
+      for (const disciplineId of disciplineIds.values()) {
+        const ids = [...currentNotebooks, ...createdNotebooks]
+          .filter(notebook => notebook.disciplineId === disciplineId)
+          .sort((a, b) => (a.cycleOrder ?? 0) - (b.cycleOrder ?? 0))
+          .map(notebook => notebook.id);
         const savedCycle = await settingsRepository.get("studyCycle:" + disciplineId);
         await settingsRepository.set("studyCycle:" + disciplineId, reconcileStudyCycle(
           savedCycle && typeof savedCycle === "object" ? savedCycle as StudyCycleProgress : undefined,
           disciplineId, ids
         ));
       }
-      setMessage("Importação concluída: " + disciplineIds.size + " disciplina(s), " + data.notebooks.length + " caderno(s) e " + subjectsCreated + " assunto(s) novo(s). Os dados foram salvos neste dispositivo.");
-      setData(null); setFileName(""); reload();
+      setMessage(`Importação concluída! ${createdDisciplines.length} disciplina(s) e ${createdNotebooks.length} caderno(s) novo(s) cadastrados. Itens que já existiam foram mantidos sem duplicação.`);
+      setText("");
+      reload();
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "A importação não foi concluída. Confira seus dados e tente novamente.");
+      setError(reason instanceof Error ? reason.message : "Não foi possível concluir a importação. Confira o texto e tente novamente.");
     } finally { setBusy(false); }
   }
 
   return <section className="panel edital-import-panel">
     <div className="panel-heading">
-      <div><span className="eyebrow">COMECE MAIS RÁPIDO</span><h2>Importar edital com ajuda da IA</h2></div>
-      <span className="edital-import-icon"><FileSpreadsheet size={21}/></span>
+      <div><span className="eyebrow">COMECE MAIS RÁPIDO</span><h2>Organize seu edital com texto</h2></div>
+      <span className="edital-import-icon"><FileText size={21}/></span>
     </div>
-    <p className="muted-copy">Já usou o prompt EstudosFlix em uma IA e recebeu a planilha preenchida? Envie o arquivo Excel para cadastrar disciplinas, cadernos e assuntos de uma só vez.</p>
-    <div className="edital-template-downloads">
-      <a className="button secondary" href="./EstudosFlix_Modelo_Organizacao_de_Edital.xlsx" download><Download size={15}/> Baixar planilha-modelo</a>
-      <a className="button secondary" href="./Prompt_Universal_Organizar_Edital_EstudosFlix.txt" download><FileText size={15}/> Baixar prompt da IA</a>
+    <p className="muted-copy">Cole a estrutura do seu edital abaixo. O EstudosFlix identifica as disciplinas e cria os cadernos dentro de cada uma — sem planilhas, arquivos ou cadastro de assuntos.</p>
+
+    <div className="edital-text-instructions">
+      <div className="edital-instruction-title"><Sparkles size={16}/> Como preparar o texto</div>
+      <p>Se usar uma IA para organizar o edital, peça que ela devolva somente neste formato:</p>
+      <div className="edital-format-example">
+        <code>disciplina: Matemática</code>
+        <code>caderno 01: Aritmética</code>
+        <code>caderno 02: Álgebra</code>
+        <code className="edital-example-gap">disciplina: Português</code>
+        <code>caderno 01: Gramática</code>
+      </div>
+      <button type="button" className="button secondary edital-example-button" onClick={() => updateText(example)}>
+        <ClipboardList size={15}/> Preencher com exemplo completo
+      </button>
     </div>
-    <label className="button secondary file-button edital-upload-button"><FileUp size={16}/> {fileName || "Selecionar planilha preenchida"}<input type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" disabled={busy} onChange={event=>void selectFile(event.target.files?.[0])}/></label>
-    {busy&&<p className="muted-copy" role="status"><LoaderCircle size={15}/> Lendo e organizando os dados…</p>}
-    {error&&<p className="edital-import-error" role="alert"><AlertCircle size={16}/>{error}</p>}
-    {data&&<div className="edital-import-preview">
-      <div className="edital-import-counts"><div><strong>{data.disciplines.length}</strong><small>Disciplinas</small></div><div><strong>{data.notebooks.length}</strong><small>Cadernos</small></div><div><strong>{data.subjects.length}</strong><small>Assuntos</small></div></div>
-      {data.warnings.length>0&&<div className="edital-import-error"><AlertCircle size={16}/><div><strong>Corrija a planilha antes de importar:</strong>{data.warnings.map((warning,index)=><p key={index}>{warning}</p>)}</div></div>}
-      {data.notebooks.some(item=>item.parentCode)&&<p className="muted-copy small-copy">A relação de subcadernos será preservada nos registros; o ciclo atual continuará exibindo todos os cadernos na sequência.</p>}
-      <button type="button" className="button primary" disabled={busy||data.warnings.length>0||!data.disciplines.length} onClick={()=>void importStructure()}><Upload size={16}/> Importar estrutura para o EstudosFlix</button>
+
+    <label className="edital-text-label" htmlFor="edital-text-input">Texto do edital
+      <textarea id="edital-text-input" className="edital-textarea" value={text} onChange={event => updateText(event.target.value)} rows={12} spellCheck={false} placeholder={`disciplina: Matemática
+caderno 01: Aritmética
+caderno 02: Álgebra
+
+disciplina: Português
+caderno 01: Interpretação de texto
+caderno 02: Gramática`} />
+    </label>
+
+    {text.trim() && <div className="edital-import-preview">
+      <div className="edital-preview-heading"><strong>Prévia da importação</strong><span>{parsed.disciplines.length} disciplina(s) · {notebookCount} caderno(s)</span></div>
+      {parsed.errors.length > 0 && <div className="edital-import-error"><AlertCircle size={16}/><div><strong>Há itens para corrigir:</strong>{parsed.errors.map((item, index) => <p key={index}>{item}</p>)}</div></div>}
+      {parsed.disciplines.map(item => <div className="diagnostic-row" key={item.name}><span className="diagnostic-dot blue-dot"/><div><strong>{item.name}</strong><small>{item.notebooks.map((name, index) => `${String(index + 1).padStart(2, "0")} · ${name}`).join("  |  ") || "Nenhum caderno informado"}</small></div><b>{item.notebooks.length}</b></div>)}
+      <div className="edital-import-actions">
+        <button type="button" className="button secondary" disabled={busy} onClick={() => updateText("")}><Trash2 size={15}/> Limpar texto</button>
+        <button type="button" className="button primary" disabled={!canImport} onClick={() => void importStructure()}><Upload size={16}/> {busy ? "Importando…" : "Confirmar e importar"}</button>
+      </div>
     </div>}
-    {message&&<p className="edital-import-success" role="status"><CheckCircle2 size={16}/>{message}</p>}
-    <small className="edital-import-footnote">A planilha é lida no próprio navegador. Os dados são gravados apenas neste dispositivo; a importação combina com sua estrutura atual e evita duplicar disciplinas/cadernos com o mesmo nome.</small>
+    {error && <p className="edital-import-error" role="alert"><AlertCircle size={16}/>{error}</p>}
+    {message && <p className="edital-import-success" role="status"><CheckCircle2 size={16}/>{message}</p>}
+    <small className="edital-import-footnote">A importação combina com sua estrutura atual, preserva o que já existe e evita duplicar disciplinas e cadernos. Os dados ficam salvos apenas neste dispositivo.</small>
   </section>;
 }
